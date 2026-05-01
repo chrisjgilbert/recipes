@@ -10,6 +10,12 @@ export interface InstructionStep {
   text: string;
 }
 
+export interface RecipePart {
+  name: string;
+  ingredients: Ingredient[];
+  instructions: InstructionStep[];
+}
+
 export interface Recipe {
   id: string;
   title: string;
@@ -21,8 +27,7 @@ export interface Recipe {
   cook_time_minutes: number | null;
   total_time_minutes: number | null;
   servings: number | null;
-  ingredients: Ingredient[];
-  instructions: InstructionStep[];
+  parts: RecipePart[];
   tags: string[];
   cuisine: string | null;
   course: string | null;

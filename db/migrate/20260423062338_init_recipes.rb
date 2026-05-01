@@ -13,8 +13,7 @@ class InitRecipes < ActiveRecord::Migration[8.1]
       t.integer :cook_time_minutes
       t.integer :total_time_minutes
       t.integer :servings
-      t.jsonb   :ingredients, null: false, default: []
-      t.jsonb   :instructions, null: false, default: []
+      t.jsonb   :parts, null: false, default: []
       t.text    :tags, array: true, null: false, default: []
       t.string  :cuisine
       t.string  :course
@@ -39,8 +38,9 @@ class InitRecipes < ActiveRecord::Migration[8.1]
           setweight(to_tsvector('english', coalesce(NEW.description,'')), 'B') ||
           setweight(to_tsvector('english',
             coalesce((
-              SELECT string_agg(value->>'name', ' ')
-              FROM jsonb_array_elements(NEW.ingredients)
+              SELECT string_agg(ing->>'name', ' ')
+              FROM jsonb_array_elements(NEW.parts) part,
+                   jsonb_array_elements(part->'ingredients') ing
             ), '')
           ), 'C');
         RETURN NEW;

@@ -29,8 +29,13 @@ Rails.application.config.after_initialize do
       "difficulty" => "easy",
       "tags" => ["quick", "italian"],
       "notes" => nil,
-      "ingredients" => [{ "name" => "pasta", "quantity" => "200", "unit" => "g", "notes" => nil }],
-      "instructions" => [{ "step" => 1, "text" => "Boil pasta." }],
+      "parts" => [
+        {
+          "name" => "",
+          "ingredients" => [{ "name" => "pasta", "quantity" => "200", "unit" => "g", "notes" => nil }],
+          "instructions" => [{ "step" => 1, "text" => "Boil pasta." }],
+        },
+      ],
     }
   end
 end

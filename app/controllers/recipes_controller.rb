@@ -79,8 +79,7 @@ class RecipesController < ApplicationController
       :prep_time_minutes, :cook_time_minutes, :total_time_minutes,
       :servings, :cuisine, :course, :difficulty, :notes,
       tags: [],
-      ingredients: [:quantity, :unit, :name, :notes],
-      instructions: [:step, :text],
+      parts: [:name, ingredients: [:quantity, :unit, :name, :notes], instructions: [:step, :text]],
     )
   end
 end

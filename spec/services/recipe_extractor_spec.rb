@@ -19,7 +19,7 @@ RSpec.describe RecipeExtractor do
     }
   end
 
-  it "returns normalized fields for a valid recipe response" do
+  it "returns normalized fields for a single-part recipe response" do
     stub_request(:post, "https://api.anthropic.com/v1/messages")
       .to_return(
         status: 200,
@@ -37,8 +37,13 @@ RSpec.describe RecipeExtractor do
           "difficulty" => "easy",
           "tags" => ["spicy"],
           "notes" => nil,
-          "ingredients" => [{ "name" => "noodles", "quantity" => "200", "unit" => "g", "notes" => nil }],
-          "instructions" => [{ "step" => 1, "text" => "Boil noodles" }],
+          "parts" => [
+            {
+              "name" => "",
+              "ingredients" => [{ "name" => "noodles", "quantity" => "200", "unit" => "g", "notes" => nil }],
+              "instructions" => [{ "step" => 1, "text" => "Boil noodles" }],
+            },
+          ],
         }).to_json,
         headers: { "Content-Type" => "application/json" },
       )
@@ -49,14 +54,50 @@ RSpec.describe RecipeExtractor do
     expect(result["source_url"]).to eq("https://example.com/ramen")
     expect(result["source_site"]).to eq("example.com")
     expect(result["tags"]).to eq(["spicy"])
-    expect(result["ingredients"].first["name"]).to eq("noodles")
+    expect(result).not_to have_key("ingredients")
+    expect(result).not_to have_key("instructions")
+    expect(result["parts"].length).to eq(1)
+    expect(result["parts"].first["ingredients"].first["name"]).to eq("noodles")
+  end
+
+  it "passes through multi-part recipes" do
+    stub_request(:post, "https://api.anthropic.com/v1/messages")
+      .to_return(
+        status: 200,
+        body: tool_response({
+          "is_recipe" => true,
+          "title" => "Pork Shoulder",
+          "tags" => [],
+          "parts" => [
+            {
+              "name" => "For the rub",
+              "ingredients" => [{ "name" => "paprika" }],
+              "instructions" => [{ "step" => 1, "text" => "Mix the rub" }],
+            },
+            {
+              "name" => "For the meat",
+              "ingredients" => [{ "name" => "pork shoulder" }],
+              "instructions" => [{ "step" => 1, "text" => "Smoke low and slow" }],
+            },
+          ],
+        }).to_json,
+        headers: { "Content-Type" => "application/json" },
+      )
+
+    result = described_class.call("# markdown", source_url: "https://example.com/pork")
+
+    expect(result["parts"].length).to eq(2)
+    expect(result["parts"].first).to include("name" => "For the rub")
+    expect(result["parts"].first["ingredients"].first["name"]).to eq("paprika")
+    expect(result["parts"].last["instructions"].first["text"]).to eq("Smoke low and slow")
   end
 
   it "raises NotRecipeError when the model says is_recipe: false" do
     stub_request(:post, "https://api.anthropic.com/v1/messages").to_return(
       status: 200,
-      body: tool_response({ "is_recipe" => false, "title" => "N/A", "tags" => [],
-                            "ingredients" => [], "instructions" => [] }).to_json,
+      body: tool_response({
+        "is_recipe" => false, "title" => "N/A", "tags" => [], "parts" => []
+      }).to_json,
       headers: { "Content-Type" => "application/json" },
     )
 

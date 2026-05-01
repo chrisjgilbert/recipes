@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { Recipe } from "@/lib/types";
+import type { Ingredient, InstructionStep, Recipe } from "@/lib/types";
 import { formatMinutes } from "@/lib/utils";
 
 export default function RecipesShow({ recipe }: { recipe: Recipe }) {
@@ -121,37 +121,18 @@ export default function RecipesShow({ recipe }: { recipe: Recipe }) {
           </a>
         )}
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.5fr]">
-          <section>
-            <h2 className="mb-3 text-lg font-semibold">Ingredients</h2>
-            <ul className="space-y-1.5 text-sm">
-              {recipe.ingredients.map((ing, i) => (
-                <li key={i} className="border-b pb-1.5">
-                  <span className="font-medium">
-                    {[ing.quantity, ing.unit].filter(Boolean).join(" ")}
-                  </span>{" "}
-                  {ing.name}
-                  {ing.notes && (
-                    <span className="text-muted-foreground"> — {ing.notes}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="mb-3 text-lg font-semibold">Instructions</h2>
-            <ol className="space-y-4">
-              {recipe.instructions.map((s) => (
-                <li key={s.step} className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                    {s.step}
-                  </span>
-                  <p className="text-sm leading-relaxed">{s.text}</p>
-                </li>
-              ))}
-            </ol>
-          </section>
+        <div className="space-y-8">
+          {recipe.parts.map((part, idx) => (
+            <div key={idx} className="grid gap-8 lg:grid-cols-[1fr_1.5fr]">
+              {part.name && (
+                <section className="lg:col-span-2">
+                  <h2 className="text-xl font-semibold">{part.name}</h2>
+                </section>
+              )}
+              <IngredientsList items={part.ingredients} />
+              <InstructionsList items={part.instructions} />
+            </div>
+          ))}
         </div>
 
         {recipe.notes && (
@@ -179,5 +160,44 @@ function Chip({
       {icon}
       {children}
     </span>
+  );
+}
+
+function IngredientsList({ items }: { items: Ingredient[] }) {
+  return (
+    <section>
+      <h3 className="mb-3 text-lg font-semibold">Ingredients</h3>
+      <ul className="space-y-1.5 text-sm">
+        {items.map((ing, i) => (
+          <li key={i} className="border-b pb-1.5">
+            <span className="font-medium">
+              {[ing.quantity, ing.unit].filter(Boolean).join(" ")}
+            </span>{" "}
+            {ing.name}
+            {ing.notes && (
+              <span className="text-muted-foreground"> — {ing.notes}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function InstructionsList({ items }: { items: InstructionStep[] }) {
+  return (
+    <section>
+      <h3 className="mb-3 text-lg font-semibold">Instructions</h3>
+      <ol className="space-y-4">
+        {items.map((s, i) => (
+          <li key={i} className="flex gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+              {s.step}
+            </span>
+            <p className="text-sm leading-relaxed">{s.text}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }

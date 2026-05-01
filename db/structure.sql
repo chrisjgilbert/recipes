@@ -50,8 +50,9 @@ BEGIN
     setweight(to_tsvector('english', coalesce(NEW.description,'')), 'B') ||
     setweight(to_tsvector('english',
       coalesce((
-        SELECT string_agg(value->>'name', ' ')
-        FROM jsonb_array_elements(NEW.ingredients)
+        SELECT string_agg(ing->>'name', ' ')
+        FROM jsonb_array_elements(NEW.parts) part,
+             jsonb_array_elements(part->'ingredients') ing
       ), '')
     ), 'C');
   RETURN NEW;
@@ -89,8 +90,7 @@ CREATE TABLE public.recipes (
     cook_time_minutes integer,
     total_time_minutes integer,
     servings integer,
-    ingredients jsonb DEFAULT '[]'::jsonb NOT NULL,
-    instructions jsonb DEFAULT '[]'::jsonb NOT NULL,
+    parts jsonb DEFAULT '[]'::jsonb NOT NULL,
     tags text[] DEFAULT '{}'::text[] NOT NULL,
     cuisine character varying,
     course character varying,

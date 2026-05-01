@@ -23,32 +23,50 @@ class RecipeExtractor
         difficulty: { type: ["string", "null"] },
         tags: { type: "array", items: { type: "string" } },
         notes: { type: ["string", "null"] },
-        ingredients: {
+        parts: {
           type: "array",
+          minItems: 1,
+          description: "One entry per section of the recipe. If the source has named " \
+                       "sections (e.g. \"For the rub\", \"For the sauce\"), use those " \
+                       "names. Otherwise return a single part with name=\"\".",
           items: {
             type: "object",
             properties: {
-              quantity: { type: ["string", "null"] },
-              unit: { type: ["string", "null"] },
-              name: { type: "string" },
-              notes: { type: ["string", "null"] }
+              name: {
+                type: "string",
+                description: "Section heading, e.g. \"For the rub\". Use \"\" if the " \
+                             "source is not divided into named sections."
+              },
+              ingredients: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    quantity: { type: ["string", "null"] },
+                    unit: { type: ["string", "null"] },
+                    name: { type: "string" },
+                    notes: { type: ["string", "null"] }
+                  },
+                  required: ["name"]
+                }
+              },
+              instructions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    step: { type: "integer" },
+                    text: { type: "string" }
+                  },
+                  required: ["step", "text"]
+                }
+              }
             },
-            required: ["name"]
-          }
-        },
-        instructions: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              step: { type: "integer" },
-              text: { type: "string" }
-            },
-            required: ["step", "text"]
+            required: ["name", "ingredients", "instructions"]
           }
         }
       },
-      required: ["is_recipe", "title", "ingredients", "instructions", "tags"]
+      required: ["is_recipe", "title", "parts", "tags"]
     }
   }.freeze
 
@@ -57,7 +75,16 @@ class RecipeExtractor
     the save_recipe tool with the fields you can confidently extract. Preserve original
     wording in ingredient names and instruction text; normalize quantities but do not
     invent information. Set is_recipe=false only if the page clearly is not a recipe.
-    Always return at least one ingredient and one instruction for real recipes.
+
+    Always return at least one part. If the source organises its ingredients and/or
+    instructions into clearly named sections (e.g. "For the rub", "For the sauce",
+    "For the meat"), return one part per section using the source's own section
+    names. If a section only lists ingredients (no method of its own), still include
+    it as a part with an empty `instructions` array, and vice versa. Number `step`
+    from 1 within each part.
+
+    If the source is not divided into sections, return a single part with name=""
+    containing every ingredient and instruction.
   PROMPT
 
   def self.call(markdown, source_url: nil)
@@ -123,14 +150,22 @@ class RecipeExtractor
       "title", "description", "image_url",
       "prep_time_minutes", "cook_time_minutes", "total_time_minutes",
       "servings", "cuisine", "course", "difficulty",
-      "tags", "notes", "ingredients", "instructions"
+      "tags", "notes"
     ).merge(
       "source_url" => source_url,
       "source_site" => (URI(source_url).host rescue nil),
       "tags" => Array(data["tags"]),
-      "ingredients" => Array(data["ingredients"]),
-      "instructions" => Array(data["instructions"])
+      "parts" => Array(data["parts"]).map { |p| normalize_part(p) }
     )
+  end
+
+  def normalize_part(part)
+    part = part.is_a?(Hash) ? part.transform_keys(&:to_s) : {}
+    {
+      "name" => part["name"].to_s,
+      "ingredients" => Array(part["ingredients"]),
+      "instructions" => Array(part["instructions"]),
+    }
   end
 
   def client
