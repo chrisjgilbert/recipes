@@ -76,8 +76,8 @@ RSpec.describe "Recipes", type: :request do
   end
 
   it "returns 404 for a missing recipe" do
-    expect { get "/recipes/00000000-0000-0000-0000-000000000000" }
-      .to raise_error(ActiveRecord::RecordNotFound)
+    get "/recipes/00000000-0000-0000-0000-000000000000"
+    expect(response).to have_http_status(:not_found)
   end
 
   it "renders the new recipe page" do

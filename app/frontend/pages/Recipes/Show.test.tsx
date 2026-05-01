@@ -28,7 +28,7 @@ const baseRecipe: Recipe = {
   cuisine: "Japanese",
   course: "Main",
   difficulty: "easy",
-  tags: ["spicy", "noodles"],
+  tags: ["spicy", "soup"],
   notes: "Add chilli to taste",
   parts: [
     {
@@ -63,7 +63,7 @@ describe("RecipesShow", () => {
   it("renders tags as badges", () => {
     render(<RecipesShow recipe={baseRecipe} />);
     expect(screen.getByText("spicy")).toBeInTheDocument();
-    expect(screen.getByText("noodles")).toBeInTheDocument();
+    expect(screen.getByText("soup")).toBeInTheDocument();
   });
 
   it("renders ingredients and instructions", () => {
