@@ -17,6 +17,7 @@ interface Props {
 
 const EMPTY: RecipeInput = {
   title: "",
+  chef: null,
   source_url: null,
   source_site: null,
   description: null,
@@ -26,10 +27,6 @@ const EMPTY: RecipeInput = {
   total_time_minutes: null,
   servings: null,
   parts: [],
-  tags: [],
-  cuisine: null,
-  course: null,
-  difficulty: null,
   notes: null,
 };
 
@@ -50,13 +47,7 @@ export function RecipeForm({ defaultValues, submitLabel, onSubmit, submitting }:
   }, []);
 
   const submit = handleSubmit(async (values) => {
-    const tags = typeof (values as unknown as { tags: unknown }).tags === "string"
-      ? ((values as unknown as { tags: string }).tags as string)
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : values.tags;
-    await onSubmit({ ...values, tags });
+    await onSubmit(values);
   });
 
   return (
@@ -64,6 +55,9 @@ export function RecipeForm({ defaultValues, submitLabel, onSubmit, submitting }:
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Title" htmlFor="title" required>
           <Input id="title" {...register("title", { required: true })} />
+        </Field>
+        <Field label="Chef / Author" htmlFor="chef">
+          <Input id="chef" {...register("chef")} />
         </Field>
         <Field label="Source URL" htmlFor="source_url">
           <Input id="source_url" {...register("source_url")} />
@@ -99,27 +93,10 @@ export function RecipeForm({ defaultValues, submitLabel, onSubmit, submitting }:
             {...register("total_time_minutes", { valueAsNumber: true })}
           />
         </Field>
-        <Field label="Cuisine" htmlFor="cuisine">
-          <Input id="cuisine" {...register("cuisine")} />
-        </Field>
-        <Field label="Course" htmlFor="course">
-          <Input id="course" {...register("course")} />
-        </Field>
-        <Field label="Difficulty" htmlFor="difficulty">
-          <Input id="difficulty" {...register("difficulty")} />
-        </Field>
       </div>
 
       <Field label="Description" htmlFor="description">
         <Textarea id="description" rows={2} {...register("description")} />
-      </Field>
-
-      <Field label="Tags (comma separated)" htmlFor="tags">
-        <Input
-          id="tags"
-          defaultValue={(defaultValues?.tags ?? []).join(", ")}
-          {...register("tags" as never)}
-        />
       </Field>
 
       <section>

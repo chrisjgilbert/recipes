@@ -11,7 +11,6 @@ RSpec.describe "Recipes", type: :request do
   def sample_attrs(overrides = {})
     {
       title: "Sample Recipe",
-      tags: ["quick"],
       parts: [
         {
           "name" => "",
@@ -38,10 +37,10 @@ RSpec.describe "Recipes", type: :request do
     expect(response.body).not_to include("Beef Stew")
   end
 
-  it "filters recipes by cuisine" do
-    Recipe.create!(sample_attrs(title: "Pizza", cuisine: "Italian"))
-    Recipe.create!(sample_attrs(title: "Ramen", cuisine: "Japanese"))
-    get "/", params: { cuisine: "Italian" }
+  it "filters recipes by chef" do
+    Recipe.create!(sample_attrs(title: "Pizza", chef: "Jamie Oliver"))
+    Recipe.create!(sample_attrs(title: "Ramen", chef: "Nobu Matsuhisa"))
+    get "/", params: { chef: "Jamie" }
     expect(response.body).to include("Pizza")
     expect(response.body).not_to include("Ramen")
   end
