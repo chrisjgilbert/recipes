@@ -88,6 +88,33 @@ RSpec.describe RecipeExtractor do
     expect(result["parts"].last["instructions"].first["text"]).to eq("Smoke low and slow")
   end
 
+  it "uses claude-sonnet-4-6 for better multi-part extraction" do
+    request_body = nil
+    stub_request(:post, "https://api.anthropic.com/v1/messages")
+      .with { |req| request_body = JSON.parse(req.body); true }
+      .to_return(
+        status: 200,
+        body: tool_response({
+          "is_recipe" => true, "title" => "x", "parts" => [{ "name" => "", "ingredients" => [], "instructions" => [] }]
+        }).to_json,
+        headers: { "Content-Type" => "application/json" },
+      )
+
+    described_class.call("# markdown")
+
+    expect(request_body["model"]).to eq("claude-sonnet-4-6")
+  end
+
+  it "system prompt instructs the model to preserve every named section as a separate part" do
+    prompt = RecipeExtractor::SYSTEM_PROMPT
+    # Should explicitly forbid flattening
+    expect(prompt).to match(/do not (flatten|merge|combine)/i)
+    # Should give concrete examples beyond just "For the X" — sponge/filling/frosting style
+    expect(prompt).to match(/sponge|filling|frosting|dough|sauce/i)
+    # Should default to multiple parts when sections exist
+    expect(prompt).to match(/one part per (named )?section/i)
+  end
+
   it "raises NotRecipeError when the model says is_recipe: false" do
     stub_request(:post, "https://api.anthropic.com/v1/messages").to_return(
       status: 200,

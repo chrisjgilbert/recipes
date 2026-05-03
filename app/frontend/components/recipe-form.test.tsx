@@ -65,16 +65,36 @@ describe("RecipeForm", () => {
 
   it("adds a second part when clicking Add part", () => {
     render(<RecipeForm submitLabel="Save" onSubmit={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /add part/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /add part/i })[0]);
     expect(screen.getAllByRole("button", { name: /remove part/i })).toHaveLength(2);
   });
 
   it("removes a part when clicking its remove button", () => {
     render(<RecipeForm submitLabel="Save" onSubmit={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /add part/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /add part/i })[0]);
     const removeBtns = screen.getAllByRole("button", { name: /remove part/i });
     expect(removeBtns).toHaveLength(2);
     fireEvent.click(removeBtns[0]);
     expect(screen.getAllByRole("button", { name: /remove part/i })).toHaveLength(1);
+  });
+
+  it("shows a 'Parts' section heading so users discover the parts feature", () => {
+    render(<RecipeForm submitLabel="Save" onSubmit={vi.fn()} />);
+    expect(
+      screen.getByRole("heading", { name: /^parts$/i })
+    ).toBeInTheDocument();
+  });
+
+  it("labels each part with its number so the structure is visible even with one part", () => {
+    render(<RecipeForm submitLabel="Save" onSubmit={vi.fn()} />);
+    expect(screen.getByText(/part 1/i)).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: /add part/i })[0]);
+    expect(screen.getByText(/part 2/i)).toBeInTheDocument();
+  });
+
+  it("shows an 'Add part' button at the bottom of the parts list as well", () => {
+    render(<RecipeForm submitLabel="Save" onSubmit={vi.fn()} />);
+    // Two add-part buttons — one near the heading, one at the bottom of the list
+    expect(screen.getAllByRole("button", { name: /add part/i })).toHaveLength(2);
   });
 });

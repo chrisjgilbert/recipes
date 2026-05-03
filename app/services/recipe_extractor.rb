@@ -2,7 +2,7 @@ class RecipeExtractor
   class Error < StandardError; end
   class NotRecipeError < Error; end
 
-  MODEL = "claude-haiku-4-5-20251001"
+  MODEL = "claude-sonnet-4-6"
 
   SAVE_RECIPE_TOOL = {
     name: "save_recipe",
@@ -73,15 +73,26 @@ class RecipeExtractor
     wording in ingredient names and instruction text; normalize quantities but do not
     invent information. Set is_recipe=false only if the page clearly is not a recipe.
 
-    Always return at least one part. If the source organises its ingredients and/or
-    instructions into clearly named sections (e.g. "For the rub", "For the sauce",
-    "For the meat"), return one part per section using the source's own section
-    names. If a section only lists ingredients (no method of its own), still include
-    it as a part with an empty `instructions` array, and vice versa. Number `step`
-    from 1 within each part.
+    ## Parts (critical)
 
-    If the source is not divided into sections, return a single part with name=""
-    containing every ingredient and instruction.
+    Recipes are very often built from multiple components. Whenever the source groups
+    its ingredients and/or instructions under headings — anywhere in the page — return
+    one part per named section, using the source's own heading text as the part name.
+    Common patterns include:
+
+    - "For the rub" / "For the sauce" / "For the meat"
+    - "Sponge" / "Filling" / "Frosting" / "Buttercream" / "Glaze"
+    - "Dough" / "Sauce" / "Topping"
+    - "Marinade" / "Dressing" / "Garnish"
+    - Any heading that introduces its own ingredient list or method block
+
+    Do not flatten, merge, or combine sections into a single part. If the source has
+    three named sections, return three parts. If a section lists ingredients but no
+    method of its own, still include it as a part with an empty `instructions` array,
+    and vice versa. Number `step` from 1 within each part.
+
+    Only return a single part with name="" when the source is genuinely a single
+    undivided list of ingredients and instructions with no internal section headings.
   PROMPT
 
   def self.call(markdown, source_url: nil)
