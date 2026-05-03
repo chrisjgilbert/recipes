@@ -7,8 +7,7 @@ class RecipesController < ApplicationController
     params_scope = filter_params
     scope = Recipe
       .search(params_scope[:q])
-      .with_cuisine(params_scope[:cuisine])
-      .with_course(params_scope[:course])
+      .with_chef(params_scope[:chef])
       .sorted(params_scope[:sort], params_scope[:order])
 
     total  = scope.count
@@ -70,15 +69,14 @@ class RecipesController < ApplicationController
   end
 
   def filter_params
-    params.permit(:q, :cuisine, :course, :sort, :order, :limit, :offset).to_h.symbolize_keys
+    params.permit(:q, :chef, :sort, :order, :limit, :offset).to_h.symbolize_keys
   end
 
   def recipe_params
     params.require(:recipe).permit(
-      :title, :source_url, :source_site, :description, :image_url,
+      :title, :chef, :source_url, :source_site, :description, :image_url,
       :prep_time_minutes, :cook_time_minutes, :total_time_minutes,
-      :servings, :cuisine, :course, :difficulty, :notes,
-      tags: [],
+      :servings, :notes,
       parts: [:name, ingredients: [:quantity, :unit, :name, :notes], instructions: [:step, :text]],
     )
   end

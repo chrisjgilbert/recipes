@@ -13,7 +13,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Ingredient, InstructionStep, Recipe } from "@/lib/types";
 import { formatMinutes } from "@/lib/utils";
@@ -35,7 +34,12 @@ export default function RecipesShow({ recipe }: { recipe: Recipe }) {
           />
         )}
         <div className="mb-2 flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-semibold">{recipe.title}</h1>
+          <div>
+            <h1 className="text-3xl font-semibold">{recipe.title}</h1>
+            {recipe.chef && (
+              <p className="mt-1 text-base text-muted-foreground">{recipe.chef}</p>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm">
               <Link href={`/recipes/${recipe.id}/edit`}>
@@ -97,16 +101,6 @@ export default function RecipesShow({ recipe }: { recipe: Recipe }) {
               Serves {recipe.servings}
             </Chip>
           )}
-          {recipe.cuisine && <Badge variant="outline">{recipe.cuisine}</Badge>}
-          {recipe.course && <Badge variant="outline">{recipe.course}</Badge>}
-          {recipe.difficulty && (
-            <Badge variant="outline">{recipe.difficulty}</Badge>
-          )}
-          {recipe.tags.map((t) => (
-            <Badge key={t} variant="secondary" className="font-normal">
-              {t}
-            </Badge>
-          ))}
         </div>
 
         {recipe.source_url && (

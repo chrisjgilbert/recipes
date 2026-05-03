@@ -47,6 +47,7 @@ CREATE FUNCTION public.recipes_tsv_update() RETURNS trigger
 BEGIN
   NEW.search_tsv :=
     setweight(to_tsvector('english', coalesce(NEW.title,'')), 'A') ||
+    setweight(to_tsvector('english', coalesce(NEW.chef,'')), 'B') ||
     setweight(to_tsvector('english', coalesce(NEW.description,'')), 'B') ||
     setweight(to_tsvector('english',
       coalesce((
@@ -91,14 +92,11 @@ CREATE TABLE public.recipes (
     total_time_minutes integer,
     servings integer,
     parts jsonb DEFAULT '[]'::jsonb NOT NULL,
-    tags text[] DEFAULT '{}'::text[] NOT NULL,
-    cuisine character varying,
-    course character varying,
-    difficulty character varying,
     notes text,
     search_tsv tsvector,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    chef character varying
 );
 
 
@@ -136,10 +134,10 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: recipes_course_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: recipes_chef_trgm_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX recipes_course_idx ON public.recipes USING btree (course);
+CREATE INDEX recipes_chef_trgm_idx ON public.recipes USING gin (chef public.gin_trgm_ops);
 
 
 --
@@ -150,24 +148,10 @@ CREATE INDEX recipes_created_at_idx ON public.recipes USING btree (created_at DE
 
 
 --
--- Name: recipes_cuisine_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX recipes_cuisine_idx ON public.recipes USING btree (cuisine);
-
-
---
 -- Name: recipes_search_tsv_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX recipes_search_tsv_idx ON public.recipes USING gin (search_tsv);
-
-
---
--- Name: recipes_tags_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX recipes_tags_idx ON public.recipes USING gin (tags);
 
 
 --
@@ -191,5 +175,6 @@ CREATE TRIGGER recipes_tsv_trg BEFORE INSERT OR UPDATE ON public.recipes FOR EAC
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260503000000'),
 ('20260423062338');
 

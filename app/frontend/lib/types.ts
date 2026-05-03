@@ -19,6 +19,7 @@ export interface RecipePart {
 export interface Recipe {
   id: string;
   title: string;
+  chef: string | null;
   source_url: string | null;
   source_site: string | null;
   description: string | null;
@@ -28,10 +29,6 @@ export interface Recipe {
   total_time_minutes: number | null;
   servings: number | null;
   parts: RecipePart[];
-  tags: string[];
-  cuisine: string | null;
-  course: string | null;
-  difficulty: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -40,12 +37,10 @@ export interface Recipe {
 export interface RecipeSummary {
   id: string;
   title: string;
+  chef: string | null;
   image_url: string | null;
   total_time_minutes: number | null;
   servings: number | null;
-  tags: string[];
-  cuisine: string | null;
-  course: string | null;
   created_at: string;
 }
 
@@ -54,8 +49,7 @@ export type SortOrder = "asc" | "desc";
 
 export interface RecipeFiltersValue {
   q: string;
-  cuisine: string;
-  course: string;
+  chef: string;
   sort: SortKey;
   order: SortOrder;
 }

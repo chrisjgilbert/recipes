@@ -26,16 +26,13 @@ RSpec.describe RecipeExtractor do
         body: tool_response({
           "is_recipe" => true,
           "title" => "Spicy Ramen",
+          "chef" => "Ivan Orkin",
           "description" => "Weeknight bowl",
           "image_url" => nil,
           "prep_time_minutes" => 5,
           "cook_time_minutes" => 15,
           "total_time_minutes" => 20,
           "servings" => 2,
-          "cuisine" => "Japanese",
-          "course" => "Main",
-          "difficulty" => "easy",
-          "tags" => ["spicy"],
           "notes" => nil,
           "parts" => [
             {
@@ -51,9 +48,9 @@ RSpec.describe RecipeExtractor do
     result = described_class.call("# markdown", source_url: "https://example.com/ramen")
 
     expect(result["title"]).to eq("Spicy Ramen")
+    expect(result["chef"]).to eq("Ivan Orkin")
     expect(result["source_url"]).to eq("https://example.com/ramen")
     expect(result["source_site"]).to eq("example.com")
-    expect(result["tags"]).to eq(["spicy"])
     expect(result).not_to have_key("ingredients")
     expect(result).not_to have_key("instructions")
     expect(result["parts"].length).to eq(1)
@@ -67,7 +64,6 @@ RSpec.describe RecipeExtractor do
         body: tool_response({
           "is_recipe" => true,
           "title" => "Pork Shoulder",
-          "tags" => [],
           "parts" => [
             {
               "name" => "For the rub",
@@ -96,7 +92,7 @@ RSpec.describe RecipeExtractor do
     stub_request(:post, "https://api.anthropic.com/v1/messages").to_return(
       status: 200,
       body: tool_response({
-        "is_recipe" => false, "title" => "N/A", "tags" => [], "parts" => []
+        "is_recipe" => false, "title" => "N/A", "parts" => []
       }).to_json,
       headers: { "Content-Type" => "application/json" },
     )

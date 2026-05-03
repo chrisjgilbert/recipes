@@ -11,7 +11,6 @@ RSpec.describe Recipe, type: :model do
           "instructions" => [{ "step" => 1, "text" => "Boil" }],
         },
       ],
-      tags: ["italian"],
     }
   end
 
@@ -55,7 +54,7 @@ RSpec.describe Recipe, type: :model do
       @pasta = Recipe.create!(valid_attrs)
       @curry = Recipe.create!(valid_attrs.merge(
         title: "Curry",
-        cuisine: "Indian",
+        chef: "Yotam Ottolenghi",
         parts: [
           {
             "name" => "",
@@ -66,12 +65,16 @@ RSpec.describe Recipe, type: :model do
       ))
     end
 
-    it ".with_cuisine filters by cuisine" do
-      expect(Recipe.with_cuisine("Indian")).to contain_exactly(@curry)
+    it ".with_chef filters by chef name" do
+      expect(Recipe.with_chef("Ottolenghi")).to contain_exactly(@curry)
     end
 
     it ".search matches title" do
       expect(Recipe.search("Curry")).to contain_exactly(@curry)
+    end
+
+    it ".search matches chef name" do
+      expect(Recipe.search("Ottolenghi")).to contain_exactly(@curry)
     end
 
     it ".sorted rejects unknown columns and orders" do
@@ -84,7 +87,7 @@ RSpec.describe Recipe, type: :model do
 
   describe "parts validation" do
     it "defaults to an empty array" do
-      recipe = Recipe.create!(title: "Empty", tags: [])
+      recipe = Recipe.create!(title: "Empty")
       expect(recipe.parts).to eq([])
     end
 

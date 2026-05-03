@@ -10,10 +10,10 @@ class Recipe < ApplicationRecord
     sanitized = query.strip
     where("search_tsv @@ websearch_to_tsquery('english', ?)", sanitized)
       .or(where("title ILIKE ?", "%#{sanitized}%"))
+      .or(where("chef ILIKE ?", "%#{sanitized}%"))
   }
 
-  scope :with_cuisine, ->(value) { value.present? ? where(cuisine: value) : all }
-  scope :with_course,  ->(value) { value.present? ? where(course: value) : all }
+  scope :with_chef, ->(value) { value.present? ? where("chef ILIKE ?", "%#{value}%") : all }
 
   scope :sorted, ->(sort, order) {
     column = SORT_COLUMNS.include?(sort) ? sort : "created_at"
@@ -24,7 +24,7 @@ class Recipe < ApplicationRecord
   def summary_attributes
     attributes.slice(
       "id", "title", "image_url", "total_time_minutes", "servings",
-      "tags", "cuisine", "course", "created_at"
+      "chef", "created_at"
     )
   end
 

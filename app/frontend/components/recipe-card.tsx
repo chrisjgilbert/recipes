@@ -1,7 +1,6 @@
 import { Link } from "@inertiajs/react";
 import { Clock, Users } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { RecipeSummary } from "@/lib/types";
 import { formatMinutes } from "@/lib/utils";
@@ -28,8 +27,11 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             </div>
           )}
         </div>
-        <CardContent className="space-y-2 p-3">
+        <CardContent className="space-y-1 p-3">
           <h3 className="line-clamp-2 font-medium leading-snug">{recipe.title}</h3>
+          {recipe.chef && (
+            <p className="text-xs text-muted-foreground">{recipe.chef}</p>
+          )}
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             {time && (
               <span className="inline-flex items-center gap-1">
@@ -44,15 +46,6 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
               </span>
             )}
           </div>
-          {recipe.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {recipe.tags.slice(0, 3).map((t) => (
-                <Badge key={t} variant="secondary" className="font-normal">
-                  {t}
-                </Badge>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
     </Link>

@@ -20,8 +20,7 @@ interface Props {
 export default function RecipesIndex(props: Props) {
   const filters: RecipeFiltersValue = {
     q: props.filters.q ?? "",
-    cuisine: props.filters.cuisine ?? "",
-    course: props.filters.course ?? "",
+    chef: props.filters.chef ?? "",
     sort: (props.filters.sort as RecipeFiltersValue["sort"]) ?? "created_at",
     order: (props.filters.order as RecipeFiltersValue["order"]) ?? "desc",
   };

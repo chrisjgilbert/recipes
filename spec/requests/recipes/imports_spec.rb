@@ -11,6 +11,7 @@ RSpec.describe "Recipes::Imports", type: :request do
   let(:extracted_data) do
     {
       "title" => "Imported Pasta",
+      "chef" => "Marcella Hazan",
       "source_url" => "https://example.com/pasta",
       "source_site" => "example.com",
       "description" => nil,
@@ -19,10 +20,6 @@ RSpec.describe "Recipes::Imports", type: :request do
       "cook_time_minutes" => 20,
       "total_time_minutes" => 30,
       "servings" => 4,
-      "cuisine" => "Italian",
-      "course" => "Main",
-      "difficulty" => "easy",
-      "tags" => ["pasta"],
       "notes" => nil,
       "parts" => [
         {
@@ -44,6 +41,7 @@ RSpec.describe "Recipes::Imports", type: :request do
 
     expect(response).to redirect_to(recipe_path(Recipe.last))
     expect(Recipe.last.title).to eq("Imported Pasta")
+    expect(Recipe.last.chef).to eq("Marcella Hazan")
   end
 
   it "redirects with import_error=not_a_recipe when URL is blank" do

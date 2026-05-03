@@ -12,16 +12,13 @@ class RecipeExtractor
       properties: {
         is_recipe: { type: "boolean", description: "True if the page is a recipe." },
         title: { type: "string" },
+        chef: { type: ["string", "null"], description: "Original recipe author or chef name." },
         description: { type: ["string", "null"] },
         image_url: { type: ["string", "null"] },
         prep_time_minutes: { type: ["integer", "null"] },
         cook_time_minutes: { type: ["integer", "null"] },
         total_time_minutes: { type: ["integer", "null"] },
         servings: { type: ["integer", "null"] },
-        cuisine: { type: ["string", "null"] },
-        course: { type: ["string", "null"] },
-        difficulty: { type: ["string", "null"] },
-        tags: { type: "array", items: { type: "string" } },
         notes: { type: ["string", "null"] },
         parts: {
           type: "array",
@@ -66,7 +63,7 @@ class RecipeExtractor
           }
         }
       },
-      required: ["is_recipe", "title", "parts", "tags"]
+      required: ["is_recipe", "title", "parts"]
     }
   }.freeze
 
@@ -147,14 +144,12 @@ class RecipeExtractor
 
   def normalize(data, source_url)
     data.slice(
-      "title", "description", "image_url",
+      "title", "chef", "description", "image_url",
       "prep_time_minutes", "cook_time_minutes", "total_time_minutes",
-      "servings", "cuisine", "course", "difficulty",
-      "tags", "notes"
+      "servings", "notes"
     ).merge(
       "source_url" => source_url,
       "source_site" => (URI(source_url).host rescue nil),
-      "tags" => Array(data["tags"]),
       "parts" => Array(data["parts"]).map { |p| normalize_part(p) }
     )
   end
