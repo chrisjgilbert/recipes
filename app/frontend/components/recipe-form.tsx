@@ -102,16 +102,17 @@ export function RecipeForm({ defaultValues, submitLabel, onSubmit, submitting }:
       <section>
         <div className="mb-2 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold">Ingredients &amp; instructions</h3>
+            <h3 className="font-semibold">Parts</h3>
             <p className="text-xs text-muted-foreground">
-              Add a part for each section of the recipe. Use a blank name for a
-              simple recipe, or names like &ldquo;For the rub&rdquo; / &ldquo;For
-              the sauce&rdquo; for sectioned recipes.
+              Add a part for each section of the recipe (e.g. &ldquo;Sponge&rdquo;,
+              &ldquo;Filling&rdquo;, &ldquo;Frosting&rdquo;, or &ldquo;For the
+              sauce&rdquo;). Leave the name blank for a simple recipe with no
+              sections.
             </p>
           </div>
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() =>
               parts.append({ name: "", ingredients: [], instructions: [] })
@@ -130,6 +131,18 @@ export function RecipeForm({ defaultValues, submitLabel, onSubmit, submitting }:
               onRemove={() => parts.remove(i)}
             />
           ))}
+        </div>
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              parts.append({ name: "", ingredients: [], instructions: [] })
+            }
+          >
+            <Plus className="h-4 w-4" /> Add part
+          </Button>
         </div>
       </section>
 
@@ -190,6 +203,9 @@ function PartFields({
 
   return (
     <div className="rounded-md border border-border p-4 space-y-4">
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Part {index + 1}
+      </div>
       <div className="flex items-end gap-2">
         <div className="flex-1">
           <Label htmlFor={`parts.${index}.name`}>
