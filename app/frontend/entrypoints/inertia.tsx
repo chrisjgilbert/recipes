@@ -21,7 +21,10 @@ type PageModule = { default: React.ComponentType<Record<string, unknown>> };
 
 createInertiaApp({
   resolve: (name) => {
-    const pages = import.meta.glob<PageModule>("../pages/**/*.tsx", { eager: true });
+    const pages = import.meta.glob<PageModule>(
+      ["../pages/**/*.tsx", "!../pages/**/*.test.tsx"],
+      { eager: true },
+    );
     const page = pages[`../pages/${name}.tsx`];
     if (!page) throw new Error(`Inertia page not found: ${name}`);
     return page;
