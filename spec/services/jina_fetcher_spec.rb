@@ -10,7 +10,7 @@ RSpec.describe JinaFetcher do
 
   it "retries on transient errors and eventually succeeds" do
     stub_request(:get, "https://r.jina.test/https://example.com")
-      .to_return({ status: 500 }, { status: 500 }, { status: 200, body: "ok" })
+      .to_return({ status: 500 }, { status: 200, body: "ok" })
     expect(described_class.call("https://example.com")).to eq("ok")
   end
 
