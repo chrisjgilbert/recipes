@@ -111,19 +111,9 @@ class RecipeExtractor
   private
 
   def request_with_retry(markdown)
-    tries = 0
-    begin
-      tries += 1
-      client.messages(parameters: message_params(markdown))
-    rescue Anthropic::Error => e
-      raise Error, e.message if tries > 1 || !retryable?(e)
-      sleep(1.5)
-      retry
-    end
-  end
-
-  def retryable?(error)
-    error.message.to_s.include?("529") || error.message.to_s.include?("overloaded")
+    client.messages(parameters: message_params(markdown))
+  rescue Anthropic::Error => e
+    raise Error, e.message
   end
 
   def message_params(markdown)
@@ -175,6 +165,9 @@ class RecipeExtractor
   end
 
   def client
-    @client ||= Anthropic::Client.new(access_token: Rails.application.credentials.anthropic_api_key!)
+    @client ||= Anthropic::Client.new(
+      access_token: Rails.application.credentials.anthropic_api_key!,
+      request_timeout: 25
+    )
   end
 end
