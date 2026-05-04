@@ -1,8 +1,8 @@
 class JinaFetcher
   class Error < StandardError; end
 
-  TIMEOUT = 30
-  RETRIES = 2
+  TIMEOUT = 12
+  RETRIES = 1
 
   def self.call(url)
     new.call(url)
