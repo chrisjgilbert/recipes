@@ -112,7 +112,7 @@ class RecipeExtractor
 
   def request_with_retry(markdown)
     client.messages(parameters: message_params(markdown))
-  rescue Anthropic::Error => e
+  rescue Anthropic::Error, Faraday::Error => e
     raise Error, e.message
   end
 

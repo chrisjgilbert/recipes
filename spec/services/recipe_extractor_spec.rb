@@ -115,6 +115,12 @@ RSpec.describe RecipeExtractor do
     expect(prompt).to match(/one part per (named )?section/i)
   end
 
+  it "wraps Faraday timeouts in RecipeExtractor::Error" do
+    stub_request(:post, "https://api.anthropic.com/v1/messages").to_timeout
+
+    expect { described_class.call("x") }.to raise_error(RecipeExtractor::Error)
+  end
+
   it "raises NotRecipeError when the model says is_recipe: false" do
     stub_request(:post, "https://api.anthropic.com/v1/messages").to_return(
       status: 200,
