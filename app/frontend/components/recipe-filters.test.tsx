@@ -5,8 +5,7 @@ import { RecipeFilters } from "./recipe-filters";
 
 const baseValue = {
   q: "",
-  cuisine: "",
-  course: "",
+  chef: "",
   sort: "created_at" as const,
   order: "desc" as const,
 };
@@ -15,7 +14,7 @@ describe("RecipeFilters", () => {
   it("debounces search ~300ms after last keystroke", async () => {
     const onChange = vi.fn();
     render(<RecipeFilters value={baseValue} onChange={onChange} />);
-    fireEvent.change(screen.getByPlaceholderText(/search title or ingredient/i), {
+    fireEvent.change(screen.getByPlaceholderText(/search recipes/i), {
       target: { value: "pasta" },
     });
     expect(onChange).not.toHaveBeenCalled();
@@ -25,12 +24,16 @@ describe("RecipeFilters", () => {
     );
   });
 
-  it("fires onChange immediately for cuisine", () => {
+  it("debounces chef filter ~300ms after last keystroke", async () => {
     const onChange = vi.fn();
     render(<RecipeFilters value={baseValue} onChange={onChange} />);
-    fireEvent.change(screen.getByPlaceholderText("Cuisine"), {
-      target: { value: "Italian" },
+    fireEvent.change(screen.getByPlaceholderText(/chef or author/i), {
+      target: { value: "Ottolenghi" },
     });
-    expect(onChange).toHaveBeenCalledWith({ ...baseValue, cuisine: "Italian" });
+    expect(onChange).not.toHaveBeenCalled();
+    await waitFor(
+      () => expect(onChange).toHaveBeenCalledWith({ ...baseValue, chef: "Ottolenghi" }),
+      { timeout: 1000 },
+    );
   });
 });

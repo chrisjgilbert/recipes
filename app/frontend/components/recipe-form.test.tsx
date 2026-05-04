@@ -28,39 +28,22 @@ describe("RecipeForm", () => {
     );
   });
 
-  it("parses comma-separated tags string into an array", async () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    render(<RecipeForm submitLabel="Save" onSubmit={onSubmit} />);
-
-    fireEvent.change(screen.getByLabelText(/title/i), { target: { value: "T" } });
-    fireEvent.change(screen.getByLabelText(/tags/i), { target: { value: "quick, easy, vegan" } });
-    fireEvent.click(screen.getByRole("button", { name: /save/i }));
-
-    await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith(
-        expect.objectContaining({ tags: ["quick", "easy", "vegan"] })
-      )
-    );
-  });
-
   it("shows Saving… and disables submit when submitting=true", () => {
     render(<RecipeForm submitLabel="Create recipe" onSubmit={vi.fn()} submitting />);
     const btn = screen.getByRole("button", { name: /saving/i });
     expect(btn).toBeDisabled();
   });
 
-  it("pre-fills title from defaultValues", () => {
+  it("pre-fills title and chef from defaultValues", () => {
     render(
       <RecipeForm
-        defaultValues={{ title: "Existing Recipe", tags: ["italian", "pasta"] }}
+        defaultValues={{ title: "Existing Recipe", chef: "Yotam Ottolenghi" }}
         submitLabel="Save"
         onSubmit={vi.fn()}
       />
     );
     expect(screen.getByLabelText(/title/i)).toHaveValue("Existing Recipe");
-    // react-hook-form's register overrides defaultValue with the form state
-    // value, so the array is stringified without spaces.
-    expect(screen.getByLabelText(/tags/i)).toHaveValue("italian,pasta");
+    expect(screen.getByLabelText(/chef/i)).toHaveValue("Yotam Ottolenghi");
   });
 
   it("adds a second part when clicking Add part", () => {

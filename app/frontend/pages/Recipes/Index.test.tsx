@@ -20,16 +20,14 @@ import type { RecipeSummary } from "@/lib/types";
 const baseRecipe: RecipeSummary = {
   id: "r1",
   title: "Pasta",
+  chef: null,
   image_url: null,
   total_time_minutes: 30,
   servings: 2,
-  tags: ["quick"],
-  cuisine: "Italian",
-  course: "Main",
   created_at: "2026-01-01T00:00:00Z",
 };
 
-const defaultFilters = { q: "", cuisine: "", course: "", sort: "created_at" as const, order: "desc" as const };
+const defaultFilters = { q: "", chef: "", sort: "created_at" as const, order: "desc" as const };
 const defaultFlash = { notice: null, alert: null };
 
 beforeEach(() => {

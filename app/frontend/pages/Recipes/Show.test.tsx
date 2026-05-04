@@ -17,6 +17,7 @@ import type { Recipe } from "@/lib/types";
 const baseRecipe: Recipe = {
   id: "r1",
   title: "Spicy Ramen",
+  chef: "Ivan Orkin",
   source_url: "https://example.com/ramen",
   source_site: "example.com",
   description: "A warming bowl",
@@ -25,10 +26,6 @@ const baseRecipe: Recipe = {
   cook_time_minutes: 20,
   total_time_minutes: 30,
   servings: 2,
-  cuisine: "Japanese",
-  course: "Main",
-  difficulty: "easy",
-  tags: ["spicy", "soup"],
   notes: "Add chilli to taste",
   parts: [
     {
@@ -60,10 +57,9 @@ describe("RecipesShow", () => {
     expect(screen.getByText(/serves 2/i)).toBeInTheDocument();
   });
 
-  it("renders tags as badges", () => {
+  it("renders the chef name", () => {
     render(<RecipesShow recipe={baseRecipe} />);
-    expect(screen.getByText("spicy")).toBeInTheDocument();
-    expect(screen.getByText("soup")).toBeInTheDocument();
+    expect(screen.getByText("Ivan Orkin")).toBeInTheDocument();
   });
 
   it("renders ingredients and instructions", () => {
