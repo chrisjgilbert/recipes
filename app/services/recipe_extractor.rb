@@ -167,7 +167,7 @@ class RecipeExtractor
   def client
     @client ||= Anthropic::Client.new(
       access_token: Rails.application.credentials.anthropic_api_key!,
-      request_timeout: 25
+      request_timeout: 90
     )
   end
 end

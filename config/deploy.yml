@@ -39,6 +39,8 @@ env:
     RAILS_LOG_TO_STDOUT: "true"
     RAILS_SERVE_STATIC_FILES: "true"
     JINA_READER_BASE: "https://r.jina.ai"
+    # Recipe import (fetch + LLM extraction) can take >30s on slow pages.
+    HTTP_READ_TIMEOUT: "120"
     # Point Rails at the Postgres accessory running on the same host.
     POSTGRES_HOST: cookery-notes-db
     POSTGRES_USER: cookery
