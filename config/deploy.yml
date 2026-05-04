@@ -19,6 +19,8 @@ proxy:
   ssl: true
   host: cooking.gilbert.works
   app_port: 80
+  # Recipe import (fetch + LLM extraction) can exceed the 30s default.
+  response_timeout: 150
   healthcheck:
     path: /up
     interval: 5
