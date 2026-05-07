@@ -7,7 +7,7 @@ gem "puma", ">= 5.0"
 
 gem "bcrypt", "~> 3.1.7"
 gem "inertia_rails", "~> 3.6"
-gem "vite_rails", "~> 3.0"
+gem "vite_rails", "~> 3.11"
 
 gem "faraday", "~> 2.10"
 gem "ruby-anthropic", "~> 0.3"
