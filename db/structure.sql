@@ -175,6 +175,7 @@ CREATE TRIGGER recipes_tsv_trg BEFORE INSERT OR UPDATE ON public.recipes FOR EAC
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260512205100'),
 ('20260503000000'),
 ('20260423062338');
 
