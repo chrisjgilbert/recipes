@@ -91,12 +91,12 @@ CREATE TABLE public.recipes (
     cook_time_minutes integer,
     total_time_minutes integer,
     servings integer,
-    parts jsonb DEFAULT '[]'::jsonb NOT NULL,
     notes text,
     search_tsv tsvector,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    chef character varying
+    chef character varying,
+    parts jsonb DEFAULT '[]'::jsonb NOT NULL
 );
 
 
