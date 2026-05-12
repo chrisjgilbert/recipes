@@ -25,7 +25,7 @@ group :development, :test do
   gem "pry"
   gem "debug", platforms: %i[mri windows], require: "debug/prelude"
   gem "dotenv-rails"
-  gem "rspec-rails", "~> 7.1"
+  gem "rspec-rails", "~> 8.0"
 end
 
 group :test do
