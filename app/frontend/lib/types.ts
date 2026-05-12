@@ -3,6 +3,8 @@ export interface Ingredient {
   unit: string | null;
   name: string;
   notes: string | null;
+  canonical_quantity?: string | null;
+  canonical_unit?: string | null;
 }
 
 export interface InstructionStep {

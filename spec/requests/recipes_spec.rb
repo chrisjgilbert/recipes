@@ -92,6 +92,30 @@ RSpec.describe "Recipes", type: :request do
     expect(response).to redirect_to(recipe_path(Recipe.last))
   end
 
+  it "creates canonical ingredient measurements while preserving raw units" do
+    expect {
+      post "/recipes", params: {
+        recipe: sample_attrs(
+          title: "New",
+          parts: [
+            {
+              "name" => "",
+              "ingredients" => [{"name" => "olive oil", "quantity" => "1", "unit" => "T"}],
+              "instructions" => [{"step" => 1, "text" => "Stir"}],
+            },
+          ],
+        ),
+      }
+    }.to change(Recipe, :count).by(1)
+
+    expect(Recipe.last.parts.first["ingredients"].first).to include(
+      "quantity" => "1",
+      "unit" => "T",
+      "canonical_quantity" => "1",
+      "canonical_unit" => "tbsp"
+    )
+  end
+
   it "redirects with errors when create fails" do
     post "/recipes", params: { recipe: { title: "" } }
     expect(response).to redirect_to(new_recipe_path(manual: 1))
@@ -101,6 +125,29 @@ RSpec.describe "Recipes", type: :request do
     recipe = Recipe.create!(sample_attrs)
     patch "/recipes/#{recipe.id}", params: { recipe: { title: "Renamed" } }
     expect(recipe.reload.title).to eq("Renamed")
+  end
+
+  it "recomputes canonical ingredient measurements on update" do
+    recipe = Recipe.create!(sample_attrs)
+
+    patch "/recipes/#{recipe.id}", params: {
+      recipe: {
+        parts: [
+          {
+            "name" => "",
+            "ingredients" => [{"name" => "milk", "quantity" => "1/2", "unit" => "cup"}],
+            "instructions" => [{"step" => 1, "text" => "Mix"}],
+          },
+        ],
+      },
+    }
+
+    expect(recipe.reload.parts.first["ingredients"].first).to include(
+      "quantity" => "1/2",
+      "unit" => "cup",
+      "canonical_quantity" => "120",
+      "canonical_unit" => "ml"
+    )
   end
 
   it "redirects with errors when update fails" do

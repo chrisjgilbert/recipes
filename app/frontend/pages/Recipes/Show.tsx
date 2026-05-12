@@ -162,20 +162,33 @@ function IngredientsList({ items }: { items: Ingredient[] }) {
     <section>
       <h3 className="mb-3 text-lg font-semibold">Ingredients</h3>
       <ul className="space-y-1.5 text-sm">
-        {items.map((ing, i) => (
-          <li key={i} className="border-b pb-1.5">
-            <span className="font-medium">
-              {[ing.quantity, ing.unit].filter(Boolean).join(" ")}
-            </span>{" "}
-            {ing.name}
-            {ing.notes && (
-              <span className="text-muted-foreground"> — {ing.notes}</span>
-            )}
-          </li>
-        ))}
+        {items.map((ing, i) => {
+          const measurement = formatIngredientMeasurement(ing);
+
+          return (
+            <li key={i} className="border-b pb-1.5">
+              {measurement && (
+                <>
+                  <span className="font-medium">{measurement}</span>{" "}
+                </>
+              )}
+              {ing.name}
+              {ing.notes && (
+                <span className="text-muted-foreground"> — {ing.notes}</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
+}
+
+function formatIngredientMeasurement(ingredient: Ingredient) {
+  const quantity = ingredient.canonical_quantity ?? ingredient.quantity;
+  const unit = ingredient.canonical_unit ?? ingredient.unit;
+
+  return [quantity, unit].filter(Boolean).join(" ");
 }
 
 function InstructionsList({ items }: { items: InstructionStep[] }) {

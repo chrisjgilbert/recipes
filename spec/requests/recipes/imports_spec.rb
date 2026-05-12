@@ -24,7 +24,10 @@ RSpec.describe "Recipes::Imports", type: :request do
       "parts" => [
         {
           "name" => "",
-          "ingredients" => [{ "name" => "pasta", "quantity" => "200", "unit" => "g", "notes" => nil }],
+          "ingredients" => [
+            { "name" => "olive oil", "quantity" => "1", "unit" => "T", "notes" => nil },
+            { "name" => "stock", "quantity" => "1", "unit" => "cup", "notes" => nil },
+          ],
           "instructions" => [{ "step" => 1, "text" => "Boil pasta." }],
         },
       ],
@@ -42,6 +45,20 @@ RSpec.describe "Recipes::Imports", type: :request do
     expect(response).to redirect_to(recipe_path(Recipe.last))
     expect(Recipe.last.title).to eq("Imported Pasta")
     expect(Recipe.last.chef).to eq("Marcella Hazan")
+    expect(Recipe.last.parts.first["ingredients"]).to include(
+      include(
+        "quantity" => "1",
+        "unit" => "T",
+        "canonical_quantity" => "1",
+        "canonical_unit" => "tbsp"
+      ),
+      include(
+        "quantity" => "1",
+        "unit" => "cup",
+        "canonical_quantity" => "240",
+        "canonical_unit" => "ml"
+      )
+    )
   end
 
   it "redirects with import_error=not_a_recipe when URL is blank" do

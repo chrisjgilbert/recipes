@@ -64,8 +64,38 @@ describe("RecipesShow", () => {
 
   it("renders ingredients and instructions", () => {
     render(<RecipesShow recipe={baseRecipe} />);
+    expect(screen.getByText("200 g")).toBeInTheDocument();
     expect(screen.getByText("noodles")).toBeInTheDocument();
     expect(screen.getByText("Boil the noodles.")).toBeInTheDocument();
+  });
+
+  it("prefers canonical UK measurements when present", () => {
+    render(
+      <RecipesShow
+        recipe={{
+          ...baseRecipe,
+          parts: [
+            {
+              name: "",
+              ingredients: [
+                {
+                  quantity: "1",
+                  unit: "cup",
+                  canonical_quantity: "240",
+                  canonical_unit: "ml",
+                  name: "stock",
+                  notes: null,
+                },
+              ],
+              instructions: [{ step: 1, text: "Warm the stock." }],
+            },
+          ],
+        }}
+      />
+    );
+
+    expect(screen.getByText("240 ml")).toBeInTheDocument();
+    expect(screen.queryByText("1 cup")).not.toBeInTheDocument();
   });
 
   it("renders notes section", () => {

@@ -12,10 +12,10 @@ RSpec.describe RecipeExtractor do
       "role" => "assistant",
       "model" => RecipeExtractor::MODEL,
       "content" => [
-        { "type" => "tool_use", "id" => "tu_1", "name" => "save_recipe", "input" => input },
+        {"type" => "tool_use", "id" => "tu_1", "name" => "save_recipe", "input" => input}
       ],
       "stop_reason" => "tool_use",
-      "usage" => { "input_tokens" => 10, "output_tokens" => 5 },
+      "usage" => {"input_tokens" => 10, "output_tokens" => 5}
     }
   end
 
@@ -37,12 +37,12 @@ RSpec.describe RecipeExtractor do
           "parts" => [
             {
               "name" => "",
-              "ingredients" => [{ "name" => "noodles", "quantity" => "200", "unit" => "g", "notes" => nil }],
-              "instructions" => [{ "step" => 1, "text" => "Boil noodles" }],
-            },
-          ],
+              "ingredients" => [{"name" => "noodles", "quantity" => "200", "unit" => "g", "notes" => nil}],
+              "instructions" => [{"step" => 1, "text" => "Boil noodles"}]
+            }
+          ]
         }).to_json,
-        headers: { "Content-Type" => "application/json" },
+        headers: {"Content-Type" => "application/json"}
       )
 
     result = described_class.call("# markdown", source_url: "https://example.com/ramen")
@@ -54,7 +54,10 @@ RSpec.describe RecipeExtractor do
     expect(result).not_to have_key("ingredients")
     expect(result).not_to have_key("instructions")
     expect(result["parts"].length).to eq(1)
-    expect(result["parts"].first["ingredients"].first["name"]).to eq("noodles")
+    ingredient = result["parts"].first["ingredients"].first
+    expect(ingredient["name"]).to eq("noodles")
+    expect(ingredient["canonical_quantity"]).to eq("200")
+    expect(ingredient["canonical_unit"]).to eq("g")
   end
 
   it "passes through multi-part recipes" do
@@ -67,17 +70,17 @@ RSpec.describe RecipeExtractor do
           "parts" => [
             {
               "name" => "For the rub",
-              "ingredients" => [{ "name" => "paprika" }],
-              "instructions" => [{ "step" => 1, "text" => "Mix the rub" }],
+              "ingredients" => [{"name" => "paprika"}],
+              "instructions" => [{"step" => 1, "text" => "Mix the rub"}]
             },
             {
               "name" => "For the meat",
-              "ingredients" => [{ "name" => "pork shoulder" }],
-              "instructions" => [{ "step" => 1, "text" => "Smoke low and slow" }],
-            },
-          ],
+              "ingredients" => [{"name" => "pork shoulder"}],
+              "instructions" => [{"step" => 1, "text" => "Smoke low and slow"}]
+            }
+          ]
         }).to_json,
-        headers: { "Content-Type" => "application/json" },
+        headers: {"Content-Type" => "application/json"}
       )
 
     result = described_class.call("# markdown", source_url: "https://example.com/pork")
@@ -88,16 +91,65 @@ RSpec.describe RecipeExtractor do
     expect(result["parts"].last["instructions"].first["text"]).to eq("Smoke low and slow")
   end
 
-  it "uses claude-sonnet-4-6 for better multi-part extraction" do
-    request_body = nil
+  it "preserves raw units while adding canonical UK measurements" do
     stub_request(:post, "https://api.anthropic.com/v1/messages")
-      .with { |req| request_body = JSON.parse(req.body); true }
       .to_return(
         status: 200,
         body: tool_response({
-          "is_recipe" => true, "title" => "x", "parts" => [{ "name" => "", "ingredients" => [], "instructions" => [] }]
+          "is_recipe" => true,
+          "title" => "Cake Batter",
+          "parts" => [
+            {
+              "name" => "",
+              "ingredients" => [
+                {"name" => "vanilla", "quantity" => "1", "unit" => "t", "notes" => "optional"},
+                {"name" => "milk", "quantity" => "1/2", "unit" => "cup", "notes" => nil},
+                {"name" => "butter", "quantity" => "1", "unit" => "T", "notes" => "melted"}
+              ],
+              "instructions" => [{"step" => 1, "text" => "Mix everything together"}]
+            }
+          ]
         }).to_json,
-        headers: { "Content-Type" => "application/json" },
+        headers: {"Content-Type" => "application/json"}
+      )
+
+    ingredients = described_class.call("# markdown").dig("parts", 0, "ingredients")
+
+    expect(ingredients[0]).to include(
+      "quantity" => "1",
+      "unit" => "t",
+      "canonical_quantity" => "1",
+      "canonical_unit" => "tsp",
+      "notes" => "optional"
+    )
+    expect(ingredients[1]).to include(
+      "quantity" => "1/2",
+      "unit" => "cup",
+      "canonical_quantity" => "120",
+      "canonical_unit" => "ml"
+    )
+    expect(ingredients[2]).to include(
+      "quantity" => "1",
+      "unit" => "T",
+      "canonical_quantity" => "1",
+      "canonical_unit" => "tbsp",
+      "notes" => "melted"
+    )
+  end
+
+  it "uses claude-sonnet-4-6 for better multi-part extraction" do
+    request_body = nil
+    stub_request(:post, "https://api.anthropic.com/v1/messages")
+      .with { |req|
+        request_body = JSON.parse(req.body)
+        true
+    }
+      .to_return(
+        status: 200,
+        body: tool_response({
+          "is_recipe" => true, "title" => "x", "parts" => [{"name" => "", "ingredients" => [], "instructions" => []}]
+        }).to_json,
+        headers: {"Content-Type" => "application/json"}
       )
 
     described_class.call("# markdown")
@@ -115,6 +167,26 @@ RSpec.describe RecipeExtractor do
     expect(prompt).to match(/one part per (named )?section/i)
   end
 
+  it "documents description, notes, and unambiguous spoon units" do
+    prompt = RecipeExtractor::SYSTEM_PROMPT
+    ingredient_properties = RecipeExtractor::SAVE_RECIPE_TOOL.dig(
+      :input_schema, :properties, :parts, :items, :properties, :ingredients, :items, :properties
+    )
+
+    expect(prompt).to match(/description.*summary\/standfirst/i)
+    expect(prompt).to match(/recipe-level advice/i)
+    expect(prompt).to match(/Ingredient `notes`/i)
+    expect(prompt).to match(/never use bare `t` or `T`/i)
+    expect(prompt).to match(/tsp.*tbsp/i)
+
+    expect(RecipeExtractor::SAVE_RECIPE_TOOL.dig(:input_schema, :properties, :description, :description))
+      .to match(/standfirst|summary/i)
+    expect(RecipeExtractor::SAVE_RECIPE_TOOL.dig(:input_schema, :properties, :notes, :description))
+      .to match(/storage|make-ahead|substitution/i)
+    expect(ingredient_properties.dig(:notes, :description)).to match(/softened|divided/i)
+    expect(ingredient_properties.dig(:unit, :description)).to match(/tsp|tbsp/)
+  end
+
   it "wraps Faraday timeouts in RecipeExtractor::Error" do
     stub_request(:post, "https://api.anthropic.com/v1/messages").to_timeout
 
@@ -127,7 +199,7 @@ RSpec.describe RecipeExtractor do
       body: tool_response({
         "is_recipe" => false, "title" => "N/A", "parts" => []
       }).to_json,
-      headers: { "Content-Type" => "application/json" },
+      headers: {"Content-Type" => "application/json"}
     )
 
     expect { described_class.call("x") }.to raise_error(RecipeExtractor::NotRecipeError)

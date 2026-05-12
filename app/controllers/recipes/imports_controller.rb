@@ -8,6 +8,7 @@ class Recipes::ImportsController < ApplicationController
 
     markdown = JinaFetcher.call(url)
     data = RecipeExtractor.call(markdown, source_url: url)
+    data["parts"] = IngredientUnitNormalizer.normalize_parts(data["parts"])
 
     recipe = Recipe.create!(data)
     redirect_to recipe_path(recipe)

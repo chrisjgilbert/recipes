@@ -37,7 +37,7 @@ class RecipesController < ApplicationController
   end
 
   def create
-    recipe = Recipe.new(recipe_params)
+    recipe = Recipe.new(normalized_recipe_params)
     if recipe.save
       redirect_to recipe_path(recipe)
     else
@@ -50,7 +50,7 @@ class RecipesController < ApplicationController
   end
 
   def update
-    if @recipe.update(recipe_params)
+    if @recipe.update(normalized_recipe_params)
       redirect_to recipe_path(@recipe)
     else
       redirect_to edit_recipe_path(@recipe), inertia: { errors: @recipe.errors.to_hash }
@@ -79,5 +79,11 @@ class RecipesController < ApplicationController
       :servings, :notes,
       parts: [:name, ingredients: [:quantity, :unit, :name, :notes], instructions: [:step, :text]],
     )
+  end
+
+  def normalized_recipe_params
+    attrs = recipe_params.to_h
+    attrs["parts"] = IngredientUnitNormalizer.normalize_parts(attrs["parts"])
+    attrs
   end
 end

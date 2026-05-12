@@ -2,6 +2,8 @@ class Recipe < ApplicationRecord
   SORT_COLUMNS = %w[created_at title total_time_minutes].freeze
   SORT_ORDERS  = %w[asc desc].freeze
 
+  before_validation :normalize_parts_measurements
+
   validates :title, presence: true
   validate  :parts_shape
 
@@ -29,6 +31,12 @@ class Recipe < ApplicationRecord
   end
 
   private
+
+  def normalize_parts_measurements
+    return unless parts.is_a?(Array)
+
+    self.parts = IngredientUnitNormalizer.normalize_parts(parts)
+  end
 
   def parts_shape
     return errors.add(:parts, "must be an array") unless parts.is_a?(Array)

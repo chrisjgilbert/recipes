@@ -46,6 +46,37 @@ describe("RecipeForm", () => {
     expect(screen.getByLabelText(/chef/i)).toHaveValue("Yotam Ottolenghi");
   });
 
+  it("keeps raw ingredient values in the form when canonical values are also present", () => {
+    render(
+      <RecipeForm
+        defaultValues={{
+          title: "Existing Recipe",
+          parts: [
+            {
+              name: "",
+              ingredients: [
+                {
+                  quantity: "1",
+                  unit: "cup",
+                  canonical_quantity: "240",
+                  canonical_unit: "ml",
+                  name: "stock",
+                  notes: null,
+                },
+              ],
+              instructions: [{ step: 1, text: "Warm the stock." }],
+            },
+          ],
+        }}
+        submitLabel="Save"
+        onSubmit={vi.fn()}
+      />
+    );
+
+    expect(screen.getByPlaceholderText("Qty")).toHaveValue("1");
+    expect(screen.getByPlaceholderText("Unit")).toHaveValue("cup");
+  });
+
   it("adds a second part when clicking Add part", () => {
     render(<RecipeForm submitLabel="Save" onSubmit={vi.fn()} />);
     fireEvent.click(screen.getAllByRole("button", { name: /add part/i })[0]);

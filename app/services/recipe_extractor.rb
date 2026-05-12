@@ -10,16 +10,24 @@ class RecipeExtractor
     input_schema: {
       type: "object",
       properties: {
-        is_recipe: { type: "boolean", description: "True if the page is a recipe." },
-        title: { type: "string" },
-        chef: { type: ["string", "null"], description: "Original recipe author or chef name." },
-        description: { type: ["string", "null"] },
-        image_url: { type: ["string", "null"] },
-        prep_time_minutes: { type: ["integer", "null"] },
-        cook_time_minutes: { type: ["integer", "null"] },
-        total_time_minutes: { type: ["integer", "null"] },
-        servings: { type: ["integer", "null"] },
-        notes: { type: ["string", "null"] },
+        is_recipe: {type: "boolean", description: "True if the page is a recipe."},
+        title: {type: "string"},
+        chef: {type: ["string", "null"], description: "Original recipe author or chef name."},
+        description: {
+          type: ["string", "null"],
+          description: "Short summary or standfirst only when the source clearly provides one. " \
+                       "Otherwise return null rather than inventing copy or moving notes here."
+        },
+        image_url: {type: ["string", "null"]},
+        prep_time_minutes: {type: ["integer", "null"]},
+        cook_time_minutes: {type: ["integer", "null"]},
+        total_time_minutes: {type: ["integer", "null"]},
+        servings: {type: ["integer", "null"]},
+        notes: {
+          type: ["string", "null"],
+          description: "Recipe-level notes that are not part of the main method, such as " \
+                       "serving, storage, make-ahead, or substitution advice."
+        },
         parts: {
           type: "array",
           minItems: 1,
@@ -39,10 +47,23 @@ class RecipeExtractor
                 items: {
                   type: "object",
                   properties: {
-                    quantity: { type: ["string", "null"] },
-                    unit: { type: ["string", "null"] },
-                    name: { type: "string" },
-                    notes: { type: ["string", "null"] }
+                    quantity: {
+                      type: ["string", "null"],
+                      description: "Ingredient amount when clear from the source. Do not " \
+                                   "guess or invent missing quantities."
+                    },
+                    unit: {
+                      type: ["string", "null"],
+                      description: "Ingredient unit when clear from the source. Never use " \
+                                   "bare `t` or `T`; use `tsp` or `tbsp` instead. Keep " \
+                                   "`cup`/`cups` as extracted units rather than converting them."
+                    },
+                    name: {type: "string"},
+                    notes: {
+                      type: ["string", "null"],
+                      description: "Ingredient-specific note or qualifier such as " \
+                                   "`softened`, `divided`, or `plus extra for greasing`."
+                    }
                   },
                   required: ["name"]
                 }
@@ -52,8 +73,8 @@ class RecipeExtractor
                 items: {
                   type: "object",
                   properties: {
-                    step: { type: "integer" },
-                    text: { type: "string" }
+                    step: {type: "integer"},
+                    text: {type: "string"}
                   },
                   required: ["step", "text"]
                 }
@@ -70,8 +91,26 @@ class RecipeExtractor
   SYSTEM_PROMPT = <<~PROMPT.freeze
     You extract structured recipes from webpage markdown. Given the page content, call
     the save_recipe tool with the fields you can confidently extract. Preserve original
-    wording in ingredient names and instruction text; normalize quantities but do not
-    invent information. Set is_recipe=false only if the page clearly is not a recipe.
+    wording in ingredient names and instruction text, but do not invent information.
+    Set is_recipe=false only if the page clearly is not a recipe.
+
+    ## Field semantics
+
+    - `description`: a short summary/standfirst only when the source clearly provides
+      one near the title or intro. Otherwise return null.
+    - `notes`: recipe-level advice that is not part of the main method, such as
+      serving, storage, make-ahead, or substitution notes.
+    - Ingredient `notes`: ingredient-specific qualifiers like `softened`, `divided`,
+      `room temperature`, or `plus extra for greasing`.
+
+    ## Measurements
+
+    - Extract `quantity` and `unit` when they are clearly stated.
+    - Never use bare `t` or `T`; always write `tsp` for teaspoon and `tbsp` for
+      tablespoon.
+    - Keep `cup`/`cups` as extracted units at this stage. Do not convert units to UK
+      or metric equivalents in the tool response.
+    - Do not guess missing quantities or units.
 
     ## Parts (critical)
 
@@ -124,13 +163,13 @@ class RecipeExtractor
         {
           type: "text",
           text: SYSTEM_PROMPT,
-          cache_control: { type: "ephemeral" }
+          cache_control: {type: "ephemeral"}
         }
       ],
       tools: [SAVE_RECIPE_TOOL],
-      tool_choice: { type: "tool", name: "save_recipe" },
+      tool_choice: {type: "tool", name: "save_recipe"},
       messages: [
-        { role: "user", content: markdown }
+        {role: "user", content: markdown}
       ]
     }
   end
@@ -150,8 +189,14 @@ class RecipeExtractor
       "servings", "notes"
     ).merge(
       "source_url" => source_url,
-      "source_site" => (URI(source_url).host rescue nil),
-      "parts" => Array(data["parts"]).map { |p| normalize_part(p) }
+      "source_site" => begin
+        URI(source_url).host
+      rescue
+        nil
+      end,
+      "parts" => IngredientUnitNormalizer.normalize_parts(
+        Array(data["parts"]).map { |p| normalize_part(p) }
+      )
     )
   end
 
@@ -159,9 +204,19 @@ class RecipeExtractor
     part = part.is_a?(Hash) ? part.transform_keys(&:to_s) : {}
     {
       "name" => part["name"].to_s,
-      "ingredients" => Array(part["ingredients"]),
-      "instructions" => Array(part["instructions"]),
+      "ingredients" => Array(part["ingredients"]).map { |ingredient| normalize_ingredient(ingredient) },
+      "instructions" => Array(part["instructions"]).map { |instruction| normalize_instruction(instruction) }
     }
+  end
+
+  def normalize_ingredient(ingredient)
+    ingredient = ingredient.is_a?(Hash) ? ingredient.transform_keys(&:to_s) : {}
+    ingredient.slice("quantity", "unit", "name", "notes")
+  end
+
+  def normalize_instruction(instruction)
+    instruction = instruction.is_a?(Hash) ? instruction.transform_keys(&:to_s) : {}
+    instruction.slice("step", "text")
   end
 
   def client
