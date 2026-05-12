@@ -205,8 +205,19 @@ RSpec.describe RecipeExtractor do
       )
     ))
     expect(generation).to have_received(:end).with(hash_including(
+      output: hash_including("title" => "Observed Ramen"),
       usage: {prompt_tokens: 10, completion_tokens: 5, total_tokens: 15},
-      metadata: hash_including(tool_name: "save_recipe", is_recipe: true)
+      metadata: hash_including(
+        tool_name: "save_recipe",
+        is_recipe: true,
+        title: "Observed Ramen",
+        parts_count: 1,
+        ingredient_count: 0,
+        instruction_count: 0,
+        section_names: [],
+        has_image: false,
+        has_notes: false
+      )
     ))
     expect(trace).to have_received(:update).with(output: result)
   end

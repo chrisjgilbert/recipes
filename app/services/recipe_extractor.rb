@@ -185,16 +185,17 @@ class RecipeExtractor
 
       response, tool_use, data = extract_recipe_data(params)
       normalized = normalize(data, source_url)
+      extraction_summary = extraction_summary(data)
 
       generation.end(
-        output: response_content(response),
+        output: data,
         usage: response_usage(response),
-        metadata: {
+        metadata: extraction_summary.merge(
           stop_reason: response_value(response, "stop_reason"),
           tool_name: tool_use["name"],
           tool_id: tool_use["id"],
           is_recipe: data["is_recipe"]
-        }
+        )
       )
       generation_ended = true
 
@@ -341,10 +342,6 @@ class RecipeExtractor
     instruction.slice("step", "text")
   end
 
-  def response_content(response)
-    response_value(response, "content")
-  end
-
   def response_usage(response)
     usage = response_value(response, "usage")
     return if usage.blank?
@@ -363,6 +360,20 @@ class RecipeExtractor
     return unless object.respond_to?(:[])
 
     object[key] || object[key.to_sym]
+  end
+
+  def extraction_summary(data)
+    parts = Array(data["parts"])
+
+    {
+      title: data["title"],
+      parts_count: parts.length,
+      ingredient_count: parts.sum { |part| Array(part["ingredients"]).length },
+      instruction_count: parts.sum { |part| Array(part["instructions"]).length },
+      section_names: parts.filter_map { |part| part["name"].to_s.presence },
+      has_image: data["image_url"].present?,
+      has_notes: data["notes"].present?
+    }
   end
 
   def source_site(source_url)
