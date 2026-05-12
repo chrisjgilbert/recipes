@@ -36,3 +36,5 @@ group :development do
   gem "web-console"
   gem "kamal", require: false
 end
+
+gem "langfuse-ruby", "~> 0.1.7"

@@ -68,6 +68,15 @@ backups to S3-compatible object storage. Right-sized for a single-user app.
    gitignored. `RAILS_MASTER_KEY` is read from `config/master.key`
    automatically.
 
+   If you want Langfuse traces for recipe imports, also add:
+
+   ```sh
+   LANGFUSE_PUBLIC_KEY=pk-lf-...
+   LANGFUSE_SECRET_KEY=sk-lf-...
+   # Optional for self-hosted Langfuse; defaults to cloud.langfuse.com
+   LANGFUSE_HOST=https://cloud.langfuse.com
+   ```
+
 ## First deploy
 
 ```sh

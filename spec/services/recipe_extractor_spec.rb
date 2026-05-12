@@ -157,6 +157,60 @@ RSpec.describe RecipeExtractor do
     expect(request_body["model"]).to eq("claude-sonnet-4-6")
   end
 
+  it "records the Anthropic extraction call in Langfuse" do
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("LANGFUSE_PUBLIC_KEY").and_return("pk-lf-test")
+    allow(ENV).to receive(:[]).with("LANGFUSE_SECRET_KEY").and_return("sk-lf-test")
+
+    trace = instance_double("Langfuse::Trace")
+    generation = instance_double("Langfuse::Generation")
+    allow(trace).to receive(:generation).and_return(generation)
+    allow(trace).to receive(:update)
+    allow(trace).to receive(:event)
+    allow(generation).to receive(:end)
+
+    stub_request(:post, "https://api.anthropic.com/v1/messages")
+      .to_return(
+        status: 200,
+        body: tool_response({
+          "is_recipe" => true,
+          "title" => "Observed Ramen",
+          "parts" => [{"name" => "", "ingredients" => [], "instructions" => []}]
+        }).to_json,
+        headers: {"Content-Type" => "application/json"}
+      )
+
+    expect(Langfuse).to receive(:trace).with(
+      "recipe-extraction",
+      hash_including(
+        input: {
+          source_url: "https://example.com/observe",
+          source_site: "example.com",
+          markdown_length: 10
+        },
+        metadata: hash_including(source_url: "https://example.com/observe")
+      )
+    ).and_yield(trace)
+
+    result = described_class.call("# markdown", source_url: "https://example.com/observe")
+
+    expect(trace).to have_received(:generation).with(hash_including(
+      name: "anthropic.messages",
+      model: RecipeExtractor::MODEL,
+      input: hash_including(model: RecipeExtractor::MODEL, max_tokens: 4096),
+      model_parameters: hash_including(
+        max_tokens: 4096,
+        tool_choice: {type: "tool", name: "save_recipe"},
+        tool_names: ["save_recipe"]
+      )
+    ))
+    expect(generation).to have_received(:end).with(hash_including(
+      usage: {prompt_tokens: 10, completion_tokens: 5, total_tokens: 15},
+      metadata: hash_including(tool_name: "save_recipe", is_recipe: true)
+    ))
+    expect(trace).to have_received(:update).with(output: result)
+  end
+
   it "system prompt instructs the model to preserve every named section as a separate part" do
     prompt = RecipeExtractor::SYSTEM_PROMPT
     # Should explicitly forbid flattening

@@ -48,9 +48,13 @@ env:
   secret:
     # RAILS_MASTER_KEY decrypts config/credentials.yml.enc which holds
     # APP_PASSWORD_HASH and ANTHROPIC_API_KEY. POSTGRES_PASSWORD stays
-    # outside credentials so the db accessory can read it directly.
+    # outside credentials so the db accessory can read it directly. Langfuse
+    # stays in env vars so tracing can be toggled per deploy target.
     - RAILS_MASTER_KEY
     - POSTGRES_PASSWORD
+    - LANGFUSE_PUBLIC_KEY
+    - LANGFUSE_SECRET_KEY
+    - LANGFUSE_HOST
 
 # Postgres runs alongside the web container. The named volume makes the data
 # survive deploys and app container rebuilds. Bind to 127.0.0.1 only — the

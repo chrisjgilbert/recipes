@@ -139,18 +139,90 @@ class RecipeExtractor
   end
 
   def call(markdown, source_url: nil)
-    response = request_with_retry(markdown)
-    tool_use = extract_tool_use(response)
-    data = tool_use.fetch("input")
+    params = message_params(markdown)
+    return extract_recipe(params, source_url) unless langfuse_enabled?
+
+    trace_input = {
+      source_url: source_url,
+      source_site: source_site(source_url),
+      markdown_length: markdown.to_s.length
+    }
+
+    Langfuse.trace("recipe-extraction", input: trace_input, metadata: trace_input) do |trace|
+      generation = trace.generation(
+        name: "anthropic.messages",
+        model: MODEL,
+        input: params,
+        model_parameters: {
+          max_tokens: params[:max_tokens],
+          tool_choice: params[:tool_choice],
+          tool_names: params[:tools].map { |tool| tool[:name] }
+        },
+        metadata: {source_url: source_url}
+      )
+      generation_ended = false
+
+      response, tool_use, data = extract_recipe_data(params)
+      normalized = normalize(data, source_url)
+
+      generation.end(
+        output: response_content(response),
+        usage: response_usage(response),
+        metadata: {
+          stop_reason: response_value(response, "stop_reason"),
+          tool_name: tool_use["name"],
+          tool_id: tool_use["id"],
+          is_recipe: data["is_recipe"]
+        }
+      )
+      generation_ended = true
+
+      unless data["is_recipe"]
+        trace.event(
+          name: "recipe-extraction.not_recipe",
+          output: {title: data["title"]}
+        )
+        raise NotRecipeError, "Page is not a recipe"
+      end
+
+      trace.update(output: normalized)
+      normalized
+    rescue NotRecipeError
+      raise
+    rescue StandardError => e
+      unless generation_ended
+        generation.end(
+          output: {error: e.message},
+          metadata: {error_class: e.class.name}
+        )
+      end
+
+      trace.event(
+        name: "recipe-extraction.error",
+        output: {class: e.class.name, message: e.message},
+        metadata: {source_url: source_url}
+      )
+      raise
+    end
+  end
+
+  private
+
+  def extract_recipe(params, source_url)
+    _response, _tool_use, data = extract_recipe_data(params)
     raise NotRecipeError, "Page is not a recipe" unless data["is_recipe"]
 
     normalize(data, source_url)
   end
 
-  private
+  def extract_recipe_data(params)
+    response = request_with_retry(params)
+    tool_use = extract_tool_use(response)
+    [response, tool_use, tool_use.fetch("input")]
+  end
 
-  def request_with_retry(markdown)
-    client.messages(parameters: message_params(markdown))
+  def request_with_retry(params)
+    client.messages(parameters: params)
   rescue Anthropic::Error, Faraday::Error => e
     raise Error, e.message
   end
@@ -189,11 +261,7 @@ class RecipeExtractor
       "servings", "notes"
     ).merge(
       "source_url" => source_url,
-      "source_site" => begin
-        URI(source_url).host
-      rescue
-        nil
-      end,
+      "source_site" => source_site(source_url),
       "parts" => IngredientUnitNormalizer.normalize_parts(
         Array(data["parts"]).map { |p| normalize_part(p) }
       )
@@ -217,6 +285,40 @@ class RecipeExtractor
   def normalize_instruction(instruction)
     instruction = instruction.is_a?(Hash) ? instruction.transform_keys(&:to_s) : {}
     instruction.slice("step", "text")
+  end
+
+  def response_content(response)
+    response_value(response, "content")
+  end
+
+  def response_usage(response)
+    usage = response_value(response, "usage")
+    return if usage.blank?
+
+    prompt_tokens = response_value(usage, "input_tokens")
+    completion_tokens = response_value(usage, "output_tokens")
+
+    tracked_usage = {}
+    tracked_usage[:prompt_tokens] = prompt_tokens if prompt_tokens
+    tracked_usage[:completion_tokens] = completion_tokens if completion_tokens
+    tracked_usage[:total_tokens] = prompt_tokens.to_i + completion_tokens.to_i if prompt_tokens || completion_tokens
+    tracked_usage.presence
+  end
+
+  def response_value(object, key)
+    return unless object.respond_to?(:[])
+
+    object[key] || object[key.to_sym]
+  end
+
+  def source_site(source_url)
+    URI(source_url).host
+  rescue
+    nil
+  end
+
+  def langfuse_enabled?
+    ENV["LANGFUSE_PUBLIC_KEY"].present? && ENV["LANGFUSE_SECRET_KEY"].present?
   end
 
   def client
