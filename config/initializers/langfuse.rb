@@ -1,5 +1,7 @@
 return unless ENV["LANGFUSE_PUBLIC_KEY"].present? && ENV["LANGFUSE_SECRET_KEY"].present?
 
+require "langfuse"
+
 Langfuse.configure do |config|
   config.public_key = ENV["LANGFUSE_PUBLIC_KEY"]
   config.secret_key = ENV["LANGFUSE_SECRET_KEY"]
