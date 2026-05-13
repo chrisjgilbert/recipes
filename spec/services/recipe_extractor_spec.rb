@@ -247,6 +247,57 @@ RSpec.describe RecipeExtractor do
     expect { described_class.call("x") }.to raise_error(RecipeExtractor::Error)
   end
 
+  describe ".call_image" do
+    it "sends a base64 image content block and returns normalized fields" do
+      request_body = nil
+      stub_request(:post, "https://api.anthropic.com/v1/messages")
+        .with { |req|
+          request_body = JSON.parse(req.body)
+          true
+        }
+        .to_return(
+          status: 200,
+          body: tool_response({
+            "is_recipe" => true,
+            "title" => "Photo Pasta",
+            "parts" => [
+              {
+                "name" => "",
+                "ingredients" => [{"name" => "spaghetti", "quantity" => "200", "unit" => "g"}],
+                "instructions" => [{"step" => 1, "text" => "Boil"}]
+              }
+            ]
+          }).to_json,
+          headers: {"Content-Type" => "application/json"}
+        )
+
+      result = described_class.call_image("fakebytes", media_type: "image/jpeg")
+
+      expect(result["title"]).to eq("Photo Pasta")
+      expect(result["source_url"]).to be_nil
+      expect(result["source_site"]).to be_nil
+
+      content = request_body.dig("messages", 0, "content")
+      image_block = content.find { |b| b["type"] == "image" }
+      text_block = content.find { |b| b["type"] == "text" }
+      expect(image_block.dig("source", "type")).to eq("base64")
+      expect(image_block.dig("source", "media_type")).to eq("image/jpeg")
+      expect(image_block.dig("source", "data")).to eq(Base64.strict_encode64("fakebytes"))
+      expect(text_block["text"]).to match(/extract the recipe/i)
+    end
+
+    it "raises NotRecipeError when is_recipe: false" do
+      stub_request(:post, "https://api.anthropic.com/v1/messages").to_return(
+        status: 200,
+        body: tool_response({"is_recipe" => false, "title" => "x", "parts" => []}).to_json,
+        headers: {"Content-Type" => "application/json"}
+      )
+
+      expect { described_class.call_image("bytes", media_type: "image/png") }
+        .to raise_error(RecipeExtractor::NotRecipeError)
+    end
+  end
+
   it "raises NotRecipeError when the model says is_recipe: false" do
     stub_request(:post, "https://api.anthropic.com/v1/messages").to_return(
       status: 200,

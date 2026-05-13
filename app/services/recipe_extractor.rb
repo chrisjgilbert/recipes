@@ -1,3 +1,5 @@
+require "base64"
+
 class RecipeExtractor
   class Error < StandardError; end
   class NotRecipeError < Error; end
@@ -138,15 +140,34 @@ class RecipeExtractor
     new.call(markdown, source_url: source_url)
   end
 
+  def self.call_image(image_bytes, media_type:)
+    new.call_image(image_bytes, media_type: media_type)
+  end
+
   def call(markdown, source_url: nil)
     params = message_params(markdown)
-    return extract_recipe(params, source_url) unless langfuse_enabled?
-
     trace_input = {
       source_url: source_url,
       source_site: source_site(source_url),
       markdown_length: markdown.to_s.length
     }
+    run(params, source_url: source_url, trace_input: trace_input)
+  end
+
+  def call_image(image_bytes, media_type:)
+    params = image_message_params(image_bytes, media_type)
+    trace_input = {
+      source: "image",
+      media_type: media_type,
+      image_byte_size: image_bytes.to_s.bytesize
+    }
+    run(params, source_url: nil, trace_input: trace_input)
+  end
+
+  private
+
+  def run(params, source_url:, trace_input:)
+    return extract_recipe(params, source_url) unless langfuse_enabled?
 
     Langfuse.trace("recipe-extraction", input: trace_input, metadata: trace_input) do |trace|
       generation = trace.generation(
@@ -206,8 +227,6 @@ class RecipeExtractor
     end
   end
 
-  private
-
   def extract_recipe(params, source_url)
     _response, _tool_use, data = extract_recipe_data(params)
     raise NotRecipeError, "Page is not a recipe" unless data["is_recipe"]
@@ -242,6 +261,41 @@ class RecipeExtractor
       tool_choice: {type: "tool", name: "save_recipe"},
       messages: [
         {role: "user", content: markdown}
+      ]
+    }
+  end
+
+  def image_message_params(image_bytes, media_type)
+    {
+      model: MODEL,
+      max_tokens: 4096,
+      system: [
+        {
+          type: "text",
+          text: SYSTEM_PROMPT,
+          cache_control: {type: "ephemeral"}
+        }
+      ],
+      tools: [SAVE_RECIPE_TOOL],
+      tool_choice: {type: "tool", name: "save_recipe"},
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: media_type,
+                data: Base64.strict_encode64(image_bytes)
+              }
+            },
+            {
+              type: "text",
+              text: "Extract the recipe shown in this image."
+            }
+          ]
+        }
       ]
     }
   end

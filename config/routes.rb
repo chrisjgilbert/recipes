@@ -6,6 +6,7 @@ Rails.application.routes.draw do
   resources :recipes do
     collection do
       post :import, to: "recipes/imports#create", as: :import
+      post "import/image", to: "recipes/imports#create_from_image", as: :import_image
     end
   end
 

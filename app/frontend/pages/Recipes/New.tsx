@@ -7,7 +7,7 @@ import type { RecipeInput } from "@/lib/types";
 
 interface Props {
   manual: boolean;
-  importError: "not_a_recipe" | "fetch_failed" | null;
+  importError: "not_a_recipe" | "fetch_failed" | "image_failed" | null;
 }
 
 export default function RecipesNew({ manual, importError }: Props) {
