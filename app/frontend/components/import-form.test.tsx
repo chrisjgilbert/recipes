@@ -4,7 +4,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 const mockPost = vi.hoisted(() => vi.fn());
 const mockUseForm = vi.hoisted(() =>
   vi.fn(() => ({
-    data: { url: "" },
+    data: { url: "", image: null as File | null },
     setData: vi.fn(),
     post: mockPost,
     processing: false,
@@ -18,12 +18,22 @@ vi.mock("sonner", () => ({ toast: { error: mockToastError } }));
 import { ImportForm } from "./import-form";
 
 beforeEach(() => {
-  mockUseForm.mockReturnValue({
-    data: { url: "" },
+  mockUseForm.mockReset();
+  mockUseForm.mockImplementation((initial: Record<string, unknown>) => ({
+    data: { ...initial },
     setData: vi.fn(),
     post: mockPost,
     processing: false,
-  });
+  }));
+  mockPost.mockReset();
+  mockToastError.mockReset();
+
+  if (!("createObjectURL" in URL)) {
+    Object.assign(URL, {
+      createObjectURL: vi.fn(() => "blob:fake"),
+      revokeObjectURL: vi.fn(),
+    });
+  }
 });
 
 describe("ImportForm", () => {
@@ -87,5 +97,52 @@ describe("ImportForm", () => {
     render(<ImportForm importError={null} />);
     fireEvent.submit(screen.getByRole("button", { name: /^import$/i }).closest("form")!);
     expect(mockPost).toHaveBeenCalledWith("/recipes/import", expect.any(Object));
+  });
+
+  it("switches to the photo tab and shows the upload affordance", () => {
+    render(<ImportForm importError={null} />);
+    fireEvent.click(screen.getByRole("tab", { name: /photo/i }));
+    expect(screen.getByLabelText(/recipe photo/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /import from photo/i })
+    ).toBeDisabled();
+  });
+
+  it("posts to /recipes/import/image with FormData when a photo is submitted", () => {
+    const file = new File(["x"], "recipe.jpg", { type: "image/jpeg" });
+    mockUseForm.mockImplementation((initial: Record<string, unknown>) => {
+      if ("image" in initial) {
+        return {
+          data: { image: file },
+          setData: vi.fn(),
+          post: mockPost,
+          processing: false,
+        };
+      }
+      return {
+        data: { ...initial },
+        setData: vi.fn(),
+        post: mockPost,
+        processing: false,
+      };
+    });
+
+    render(<ImportForm importError={null} />);
+    fireEvent.click(screen.getByRole("tab", { name: /photo/i }));
+    fireEvent.submit(
+      screen.getByRole("button", { name: /import from photo/i }).closest("form")!
+    );
+
+    expect(mockPost).toHaveBeenCalledWith(
+      "/recipes/import/image",
+      expect.objectContaining({ forceFormData: true })
+    );
+  });
+
+  it("fires toast.error for image_failed on mount", () => {
+    render(<ImportForm importError="image_failed" />);
+    expect(mockToastError).toHaveBeenCalledWith(
+      expect.stringMatching(/photo/i)
+    );
   });
 });

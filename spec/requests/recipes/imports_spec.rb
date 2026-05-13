@@ -103,4 +103,94 @@ RSpec.describe "Recipes::Imports", type: :request do
     expect(response.body).to include("fetch_failed")
     expect(Recipe.count).to eq(0)
   end
+
+  describe "POST /recipes/import/image" do
+    let(:image_data) do
+      extracted_data.merge(
+        "title" => "Photo Pasta",
+        "source_url" => nil,
+        "source_site" => nil,
+      )
+    end
+
+    let(:upload) do
+      fixture_file_upload(write_fixture("recipe.jpg", "fakebytes"), "image/jpeg")
+    end
+
+    def write_fixture(name, contents)
+      path = Rails.root.join("tmp", "spec-uploads")
+      FileUtils.mkdir_p(path)
+      file = path.join(name)
+      File.binwrite(file, contents)
+      file
+    end
+
+    it "imports a recipe from an uploaded image" do
+      allow(ImageNormalizer).to receive(:call).and_return(["fakebytes", "image/jpeg"])
+      allow(RecipeExtractor).to receive(:call_image).and_return(image_data)
+
+      expect {
+        post "/recipes/import/image", params: { image: upload }
+      }.to change(Recipe, :count).by(1)
+
+      expect(response).to redirect_to(recipe_path(Recipe.last))
+      expect(Recipe.last.title).to eq("Photo Pasta")
+      expect(Recipe.last.source_url).to be_nil
+      expect(RecipeExtractor).to have_received(:call_image).with("fakebytes", media_type: "image/jpeg")
+    end
+
+    it "redirects with image_failed when no image is provided" do
+      post "/recipes/import/image", params: {}
+
+      expect(response).to redirect_to(new_recipe_path)
+      follow_redirect!
+      expect(response.body).to include("image_failed")
+    end
+
+    it "redirects with image_failed for disallowed content type" do
+      bmp_upload = fixture_file_upload(write_fixture("recipe.bmp", "BM" + "x" * 10), "image/bmp")
+
+      post "/recipes/import/image", params: { image: bmp_upload }
+
+      expect(response).to redirect_to(new_recipe_path)
+      follow_redirect!
+      expect(response.body).to include("image_failed")
+      expect(Recipe.count).to eq(0)
+    end
+
+    it "redirects with not_a_recipe when extractor raises NotRecipeError" do
+      allow(ImageNormalizer).to receive(:call).and_return(["fakebytes", "image/jpeg"])
+      allow(RecipeExtractor).to receive(:call_image).and_raise(RecipeExtractor::NotRecipeError)
+
+      post "/recipes/import/image", params: { image: upload }
+
+      expect(response).to redirect_to(new_recipe_path)
+      follow_redirect!
+      expect(response.body).to include("not_a_recipe")
+      expect(Recipe.count).to eq(0)
+    end
+
+    it "redirects with image_failed on ImageNormalizer::Error" do
+      allow(ImageNormalizer).to receive(:call).and_raise(ImageNormalizer::Error.new("bad heic"))
+
+      post "/recipes/import/image", params: { image: upload }
+
+      expect(response).to redirect_to(new_recipe_path)
+      follow_redirect!
+      expect(response.body).to include("image_failed")
+      expect(Recipe.count).to eq(0)
+    end
+
+    it "redirects with image_failed on RecipeExtractor::Error" do
+      allow(ImageNormalizer).to receive(:call).and_return(["fakebytes", "image/jpeg"])
+      allow(RecipeExtractor).to receive(:call_image).and_raise(RecipeExtractor::Error.new("API down"))
+
+      post "/recipes/import/image", params: { image: upload }
+
+      expect(response).to redirect_to(new_recipe_path)
+      follow_redirect!
+      expect(response.body).to include("image_failed")
+      expect(Recipe.count).to eq(0)
+    end
+  end
 end
