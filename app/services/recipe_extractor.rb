@@ -14,7 +14,12 @@ class RecipeExtractor
       properties: {
         is_recipe: {type: "boolean", description: "True if the page is a recipe."},
         title: {type: "string"},
-        chef: {type: ["string", "null"], description: "Original recipe author or chef name."},
+        chef: {
+          type: ["string", "null"],
+          description: "The original creator of the recipe — the chef or food writer who developed it. " \
+                       "If a well-known chef's recipe is republished on someone else's website, use the " \
+                       "chef's name, not the website author. Return null if the original creator is not mentioned."
+        },
         description: {
           type: ["string", "null"],
           description: "Short summary or standfirst only when the source clearly provides one. " \
@@ -98,6 +103,10 @@ class RecipeExtractor
 
     ## Field semantics
 
+    - `chef`: the original creator of the recipe — the chef or food writer who developed
+      it. Many pages republish a well-known chef's recipe; in that case use the chef's
+      name, not the website author or blogger. Return null if the original creator is
+      not clearly identified.
     - `description`: a short summary/standfirst only when the source clearly provides
       one near the title or intro. Otherwise return null.
     - `notes`: recipe-level advice that is not part of the main method, such as
