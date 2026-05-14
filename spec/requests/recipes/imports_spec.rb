@@ -162,6 +162,16 @@ RSpec.describe "Recipes::Imports", type: :request do
       expect(RecipeExtractor).to have_received(:call_image).with("fakebytes", media_type: "image/jpeg")
     end
 
+    it "uses the submitted chef param, overriding the extracted value" do
+      allow(ImageNormalizer).to receive(:call).and_return(["fakebytes", "image/jpeg"])
+      allow(RecipeExtractor).to receive(:call_image).and_return(image_data.merge("chef" => nil))
+      allow(CloudinaryUploader).to receive(:call).and_return(nil)
+
+      post "/recipes/import/image", params: { image: upload, chef: "Nigella Lawson" }
+
+      expect(Recipe.last.chef).to eq("Nigella Lawson")
+    end
+
     it "saves the recipe without image_url when Cloudinary upload fails" do
       allow(ImageNormalizer).to receive(:call).and_return(["fakebytes", "image/jpeg"])
       allow(RecipeExtractor).to receive(:call_image).and_return(image_data)

@@ -49,6 +49,7 @@ class Recipes::ImportsController < ApplicationController
     data = RecipeExtractor.call_image(bytes, media_type: media_type)
     data["parts"] = IngredientUnitNormalizer.normalize_parts(data["parts"])
     data["image_url"] = upload_to_cloudinary(bytes, media_type: media_type)
+    data["chef"] = params[:chef].strip if params[:chef].present?
 
     recipe = Recipe.create!(data)
     redirect_to recipe_path(recipe)
