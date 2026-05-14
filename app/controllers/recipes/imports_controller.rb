@@ -48,6 +48,7 @@ class Recipes::ImportsController < ApplicationController
     bytes, media_type = ImageNormalizer.call(uploaded.tempfile, original_content_type: uploaded.content_type)
     data = RecipeExtractor.call_image(bytes, media_type: media_type)
     data["parts"] = IngredientUnitNormalizer.normalize_parts(data["parts"])
+    data["image_url"] = upload_to_cloudinary(bytes, media_type: media_type)
 
     recipe = Recipe.create!(data)
     redirect_to recipe_path(recipe)
@@ -58,5 +59,14 @@ class Recipes::ImportsController < ApplicationController
     Rails.logger.warn("Image import failed: #{e.class}: #{e.message}")
     flash[:import_error] = "image_failed"
     redirect_to new_recipe_path
+  end
+
+  private
+
+  def upload_to_cloudinary(bytes, media_type:)
+    CloudinaryUploader.call(bytes, media_type: media_type)
+  rescue CloudinaryUploader::Error => e
+    Rails.logger.error("Cloudinary upload failed: #{e.message}")
+    nil
   end
 end
