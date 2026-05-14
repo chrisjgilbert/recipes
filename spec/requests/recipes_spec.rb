@@ -37,10 +37,10 @@ RSpec.describe "Recipes", type: :request do
     expect(response.body).not_to include("Beef Stew")
   end
 
-  it "filters recipes by chef" do
+  it "searches recipes by chef name" do
     Recipe.create!(sample_attrs(title: "Pizza", chef: "Jamie Oliver"))
     Recipe.create!(sample_attrs(title: "Ramen", chef: "Nobu Matsuhisa"))
-    get "/", params: { chef: "Jamie" }
+    get "/", params: { q: "Jamie" }
     expect(response.body).to include("Pizza")
     expect(response.body).not_to include("Ramen")
   end

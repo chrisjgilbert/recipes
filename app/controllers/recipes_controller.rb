@@ -7,7 +7,6 @@ class RecipesController < ApplicationController
     params_scope = filter_params
     scope = Recipe
       .search(params_scope[:q])
-      .with_chef(params_scope[:chef])
       .sorted(params_scope[:sort], params_scope[:order])
 
     total  = scope.count
@@ -69,7 +68,7 @@ class RecipesController < ApplicationController
   end
 
   def filter_params
-    params.permit(:q, :chef, :sort, :order, :limit, :offset).to_h.symbolize_keys
+    params.permit(:q, :sort, :order, :limit, :offset).to_h.symbolize_keys
   end
 
   def recipe_params
