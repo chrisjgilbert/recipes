@@ -37,6 +37,7 @@ RSpec.describe "Recipes::Imports", type: :request do
   it "imports a recipe and redirects to the detail page" do
     allow(JinaFetcher).to receive(:call).and_return("# markdown")
     allow(RecipeExtractor).to receive(:call).and_return(extracted_data)
+    allow(OgImageFetcher).to receive(:call).and_return(nil)
 
     expect {
       post "/recipes/import", params: { url: "https://example.com/pasta" }
@@ -59,6 +60,26 @@ RSpec.describe "Recipes::Imports", type: :request do
         "canonical_unit" => "ml"
       )
     )
+  end
+
+  it "uses og:image when extractor returns no image_url" do
+    allow(JinaFetcher).to receive(:call).and_return("# markdown")
+    allow(RecipeExtractor).to receive(:call).and_return(extracted_data.merge("image_url" => nil))
+    allow(OgImageFetcher).to receive(:call).and_return("https://example.com/og.jpg")
+
+    post "/recipes/import", params: { url: "https://example.com/pasta" }
+
+    expect(Recipe.last.image_url).to eq("https://example.com/og.jpg")
+  end
+
+  it "keeps extractor image_url and skips og:image fetch when already present" do
+    allow(JinaFetcher).to receive(:call).and_return("# markdown")
+    allow(RecipeExtractor).to receive(:call).and_return(extracted_data.merge("image_url" => "https://example.com/existing.jpg"))
+    expect(OgImageFetcher).not_to receive(:call)
+
+    post "/recipes/import", params: { url: "https://example.com/pasta" }
+
+    expect(Recipe.last.image_url).to eq("https://example.com/existing.jpg")
   end
 
   it "redirects with import_error=not_a_recipe when URL is blank" do
