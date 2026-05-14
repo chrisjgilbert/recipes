@@ -146,9 +146,10 @@ RSpec.describe "Recipes::Imports", type: :request do
       file
     end
 
-    it "imports a recipe from an uploaded image" do
+    it "imports a recipe from an uploaded image and sets image_url from Cloudinary" do
       allow(ImageNormalizer).to receive(:call).and_return(["fakebytes", "image/jpeg"])
       allow(RecipeExtractor).to receive(:call_image).and_return(image_data)
+      allow(CloudinaryUploader).to receive(:call).and_return("https://res.cloudinary.com/test/recipe.jpg")
 
       expect {
         post "/recipes/import/image", params: { image: upload }
@@ -157,7 +158,21 @@ RSpec.describe "Recipes::Imports", type: :request do
       expect(response).to redirect_to(recipe_path(Recipe.last))
       expect(Recipe.last.title).to eq("Photo Pasta")
       expect(Recipe.last.source_url).to be_nil
+      expect(Recipe.last.image_url).to eq("https://res.cloudinary.com/test/recipe.jpg")
       expect(RecipeExtractor).to have_received(:call_image).with("fakebytes", media_type: "image/jpeg")
+    end
+
+    it "saves the recipe without image_url when Cloudinary upload fails" do
+      allow(ImageNormalizer).to receive(:call).and_return(["fakebytes", "image/jpeg"])
+      allow(RecipeExtractor).to receive(:call_image).and_return(image_data)
+      allow(CloudinaryUploader).to receive(:call).and_raise(CloudinaryUploader::Error.new("timeout"))
+
+      expect {
+        post "/recipes/import/image", params: { image: upload }
+      }.to change(Recipe, :count).by(1)
+
+      expect(response).to redirect_to(recipe_path(Recipe.last))
+      expect(Recipe.last.image_url).to be_nil
     end
 
     it "redirects with image_failed when no image is provided" do
