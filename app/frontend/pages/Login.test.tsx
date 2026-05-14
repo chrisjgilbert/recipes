@@ -76,8 +76,8 @@ describe("Login", () => {
     expect(screen.getByRole("button", { name: /signing in/i })).toBeDisabled();
   });
 
-  it("renders the Cookery Notes heading", () => {
+  it("renders the Recipes heading", () => {
     render(<Login />);
-    expect(screen.getByText("Cookery Notes")).toBeInTheDocument();
+    expect(screen.getByText("Recipes")).toBeInTheDocument();
   });
 });

@@ -9,7 +9,7 @@ export function NavBar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
           <ChefHat className="h-5 w-5 text-primary" />
-          Cookery Notes
+          Recipes
         </Link>
         <div className="flex items-center gap-2">
           <Button asChild size="sm">

@@ -38,7 +38,7 @@ export default function Login() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ChefHat className="h-6 w-6 text-primary" />
-            Cookery Notes
+            Recipes
           </CardTitle>
         </CardHeader>
         <CardContent>
