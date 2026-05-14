@@ -15,8 +15,6 @@ class Recipe < ApplicationRecord
       .or(where("chef ILIKE ?", "%#{sanitized}%"))
   }
 
-  scope :with_chef, ->(value) { value.present? ? where("chef ILIKE ?", "%#{value}%") : all }
-
   scope :sorted, ->(sort, order) {
     column = SORT_COLUMNS.include?(sort) ? sort : "created_at"
     direction = SORT_ORDERS.include?(order) ? order : "desc"

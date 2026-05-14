@@ -51,7 +51,6 @@ export type SortOrder = "asc" | "desc";
 
 export interface RecipeFiltersValue {
   q: string;
-  chef: string;
   sort: SortKey;
   order: SortOrder;
 }

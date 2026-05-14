@@ -65,10 +65,6 @@ RSpec.describe Recipe, type: :model do
       ))
     end
 
-    it ".with_chef filters by chef name" do
-      expect(Recipe.with_chef("Ottolenghi")).to contain_exactly(@curry)
-    end
-
     it ".search matches title" do
       expect(Recipe.search("Curry")).to contain_exactly(@curry)
     end
