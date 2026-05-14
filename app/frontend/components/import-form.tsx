@@ -108,7 +108,7 @@ function UrlForm() {
 function PhotoForm() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const form = useForm<{ image: File | null }>({ image: null });
+  const form = useForm<{ image: File | null; chef: string }>({ image: null, chef: "" });
 
   useEffect(() => {
     if (!form.data.image) {
@@ -168,6 +168,16 @@ function PhotoForm() {
         {form.data.image && (
           <p className="text-xs text-muted-foreground">{form.data.image.name}</p>
         )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="import-chef">Chef / author <span className="text-muted-foreground font-normal">(optional)</span></Label>
+        <Input
+          id="import-chef"
+          type="text"
+          placeholder="e.g. Nigella Lawson"
+          value={form.data.chef}
+          onChange={(e) => form.setData("chef", e.target.value)}
+        />
       </div>
       <Button type="submit" disabled={form.processing || !form.data.image}>
         {form.processing && <Loader2 className="animate-spin" />}
