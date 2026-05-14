@@ -158,6 +158,7 @@ function Chip({
 }
 
 function IngredientsList({ items }: { items: Ingredient[] }) {
+  if (items.length === 0) return null;
   return (
     <section>
       <h3 className="mb-3 text-lg font-semibold">Ingredients</h3>
@@ -192,6 +193,7 @@ function formatIngredientMeasurement(ingredient: Ingredient) {
 }
 
 function InstructionsList({ items }: { items: InstructionStep[] }) {
+  if (items.length === 0) return null;
   return (
     <section>
       <h3 className="mb-3 text-lg font-semibold">Instructions</h3>
