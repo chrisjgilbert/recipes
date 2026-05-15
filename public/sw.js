@@ -1,10 +1,12 @@
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL_CACHE = `cookery-shell-${VERSION}`;
 const ASSET_CACHE = `cookery-assets-${VERSION}`;
 const RECIPE_CACHE = `cookery-recipes-${VERSION}`;
 const RECIPE_CACHE_LIMIT = 50;
 
-const SHELL_URLS = ["/", "/login", "/manifest.webmanifest"];
+const SHELL_URLS = ["/", "/manifest.webmanifest"];
+// Auth endpoints carry per-session CSRF tokens; never serve them from cache.
+const AUTH_PATHS = new Set(["/login", "/logout"]);
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -32,6 +34,8 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  if (AUTH_PATHS.has(url.pathname)) return;
 
   // Vite assets: cache-first (immutable hashed filenames).
   if (url.pathname.startsWith("/vite/") || url.pathname.startsWith("/vite-dev/")) {
