@@ -2,14 +2,8 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const mockPost = vi.hoisted(() => vi.fn());
-const mockUseForm = vi.hoisted(() =>
-  vi.fn(() => ({
-    data: { url: "", image: null as File | null },
-    setData: vi.fn(),
-    post: mockPost,
-    processing: false,
-  }))
-);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockUseForm = vi.hoisted(() => vi.fn() as any);
 const mockToastError = vi.hoisted(() => vi.fn());
 
 vi.mock("@inertiajs/react", () => ({ useForm: mockUseForm }));

@@ -1,15 +1,13 @@
 import "../styles/application.css";
 
 import { createInertiaApp, router } from "@inertiajs/react";
-import axios from "axios";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { Toaster } from "sonner";
 
-// Rails uses X-CSRF-Token with the authenticity token from the meta tag.
-const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-if (csrfToken) {
-  axios.defaults.headers.common["X-CSRF-Token"] = csrfToken;
-}
+import { syncCsrfToken } from "../lib/csrf";
+
+syncCsrfToken();
+router.on("success", syncCsrfToken);
 
 router.on("invalid", (event) => {
   if (event.detail.response.status === 422) {
