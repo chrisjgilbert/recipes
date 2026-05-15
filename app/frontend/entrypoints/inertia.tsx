@@ -1,19 +1,11 @@
 import "../styles/application.css";
 
 import { createInertiaApp, router } from "@inertiajs/react";
-import axios from "axios";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { Toaster } from "sonner";
 
-// Rails uses X-CSRF-Token with the authenticity token from the meta tag.
-// Rails rotates the token when the session changes (e.g. after logout), so
-// re-read it on every Inertia navigation rather than only at boot.
-const syncCsrfToken = () => {
-  const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-  if (token) {
-    axios.defaults.headers.common["X-CSRF-Token"] = token;
-  }
-};
+import { syncCsrfToken } from "../lib/csrf";
+
 syncCsrfToken();
 router.on("success", syncCsrfToken);
 
