@@ -93,20 +93,20 @@ RSpec.describe Recipe, type: :model do
       expect(recipe.errors[:parts]).to be_present
     end
 
-    it "is invalid when a part is missing a name" do
+    it "coerces a missing part name to an empty string via the normalizer" do
       recipe = Recipe.new(valid_attrs.merge(parts: [
         { "ingredients" => [], "instructions" => [] },
       ]))
-      expect(recipe).not_to be_valid
-      expect(recipe.errors[:parts].join).to include("name")
+      expect(recipe).to be_valid
+      expect(recipe.parts.first["name"]).to eq("")
     end
 
-    it "is invalid when a part's ingredients is not an array" do
+    it "coerces a non-array ingredients value into an array via the normalizer" do
       recipe = Recipe.new(valid_attrs.merge(parts: [
         { "name" => "rub", "ingredients" => "salt", "instructions" => [] },
       ]))
-      expect(recipe).not_to be_valid
-      expect(recipe.errors[:parts].join).to include("ingredients")
+      expect(recipe).to be_valid
+      expect(recipe.parts.first["ingredients"]).to be_an(Array)
     end
   end
 end

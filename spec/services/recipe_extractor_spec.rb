@@ -158,6 +158,7 @@ RSpec.describe RecipeExtractor do
   end
 
   it "records the Anthropic extraction call in Langfuse" do
+    require "langfuse"
     allow(ENV).to receive(:[]).and_call_original
     allow(ENV).to receive(:[]).with("LANGFUSE_PUBLIC_KEY").and_return("pk-lf-test")
     allow(ENV).to receive(:[]).with("LANGFUSE_SECRET_KEY").and_return("sk-lf-test")
